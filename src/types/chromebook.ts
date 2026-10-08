@@ -1,14 +1,16 @@
 export type ChromebookStatus =
   | "disponivel"
   | "em-uso"
-  | "manutencao";
+  | "em-reparo"
+  | "retirada-de-pecas";
 
 export type Chromebook = {
   id: string;
-  patrimonio: string;
-  modelo: string;
+  numero: string;
+  mac: string;
   numeroSerie: string;
+  modelo: string;
+  sala: string;
   status: ChromebookStatus;
-  usuario: string;
   observacoes: string;
 };

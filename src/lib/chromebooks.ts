@@ -1,68 +1,106 @@
 import { Chromebook } from "@/types/chromebook";
 
 const STORAGE_KEY = "chromebook-manager";
+const MAX_CHROMEBOOKS = 999;
+
+export type NewChromebook = Omit<Chromebook, "id">;
 
 export function getChromebooks(): Chromebook[] {
-if (typeof window === "undefined") {
-return [];
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const data = localStorage.getItem(STORAGE_KEY);
+
+  if (!data) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
 }
 
-const data = localStorage.getItem(STORAGE_KEY);
+function gerarProximoId(
+  chromebooks: Chromebook[]
+): string {
+  const numeros = chromebooks
+    .map((chromebook) => {
+      const numero = Number(
+        chromebook.id.replace("CB-", "")
+      );
 
-if (!data) {
-return [];
-}
+      return Number.isNaN(numero) ? 0 : numero;
+    })
+    .filter((numero) => numero > 0);
 
-try {
-return JSON.parse(data);
-} catch {
-return [];
-}
+  const maiorId =
+    numeros.length > 0 ? Math.max(...numeros) : 0;
+
+  const proximoId = maiorId + 1;
+
+  if (proximoId > MAX_CHROMEBOOKS) {
+    throw new Error(
+      "O limite de 999 Chromebooks foi atingido."
+    );
+  }
+
+  return "CB-" + String(proximoId).padStart(3, "0");
 }
 
 export function saveChromebook(
-chromebook: Chromebook
-): void {
-const chromebooks = getChromebooks();
+  chromebook: NewChromebook
+): Chromebook {
+  const chromebooks = getChromebooks();
 
-const updatedChromebooks = [
-...chromebooks,
-chromebook,
-];
+  const novoChromebook: Chromebook = {
+    id: gerarProximoId(chromebooks),
+    ...chromebook,
+  };
 
-localStorage.setItem(
-STORAGE_KEY,
-JSON.stringify(updatedChromebooks)
-);
+  const chromebooksAtualizados = [
+    ...chromebooks,
+    novoChromebook,
+  ];
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(chromebooksAtualizados)
+  );
+
+  return novoChromebook;
 }
 
 export function deleteChromebook(id: string): void {
-const chromebooks = getChromebooks();
+  const chromebooks = getChromebooks();
 
-const updatedChromebooks = chromebooks.filter(
-(chromebook) => chromebook.id !== id
-);
+  const chromebooksAtualizados =
+    chromebooks.filter(
+      (chromebook) => chromebook.id !== id
+    );
 
-localStorage.setItem(
-STORAGE_KEY,
-JSON.stringify(updatedChromebooks)
-);
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(chromebooksAtualizados)
+  );
 }
 
 export function updateChromebook(
-updatedChromebook: Chromebook
+  updatedChromebook: Chromebook
 ): void {
-const chromebooks = getChromebooks();
+  const chromebooks = getChromebooks();
 
-const updatedChromebooks = chromebooks.map(
-(chromebook) =>
-chromebook.id === updatedChromebook.id
-? updatedChromebook
-: chromebook
-);
+  const chromebooksAtualizados =
+    chromebooks.map((chromebook) =>
+      chromebook.id === updatedChromebook.id
+        ? updatedChromebook
+        : chromebook
+    );
 
-localStorage.setItem(
-STORAGE_KEY,
-JSON.stringify(updatedChromebooks)
-);
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(chromebooksAtualizados)
+  );
 }

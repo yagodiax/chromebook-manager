@@ -1,228 +1,279 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getChromebooks, updateChromebook } from "@/lib/chromebooks";
+import { useRouter } from "next/navigation";
+import {
+  getChromebooks,
+  updateChromebook,
+} from "@/lib/chromebooks";
 import { ChromebookStatus } from "@/types/chromebook";
 
 export default function EditarChromebookPage() {
-const [id, setId] = useState("");
-const [patrimonio, setPatrimonio] = useState("");
-const [modelo, setModelo] = useState("");
-const [numeroSerie, setNumeroSerie] = useState("");
-const [status, setStatus] =
-useState<ChromebookStatus>("disponivel");
-const [usuario, setUsuario] = useState("");
-const [observacoes, setObservacoes] = useState("");
-const [carregando, setCarregando] = useState(true);
+  const router = useRouter();
 
-useEffect(() => {
-const parametros = new URLSearchParams(window.location.search);
-const idChromebook = parametros.get("id");
+  const [id, setId] = useState("");
+  const [numero, setNumero] = useState("");
+  const [mac, setMac] = useState("");
+  const [numeroSerie, setNumeroSerie] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [sala, setSala] = useState("");
+  const [status, setStatus] =
+    useState<ChromebookStatus>("disponivel");
+  const [observacoes, setObservacoes] = useState("");
+  const [carregando, setCarregando] = useState(true);
 
-if (!idChromebook) {
-  window.location.href = "/chromebooks";
-  return;
-}
+  useEffect(() => {
+    const parametros = new URLSearchParams(
+      window.location.search
+    );
 
-const chromebooks = getChromebooks();
+    const idChromebook = parametros.get("id");
 
-const chromebook = chromebooks.find(
-  (item) => item.id === idChromebook
-);
+    if (!idChromebook) {
+      router.push("/chromebooks");
+      return;
+    }
 
-if (!chromebook) {
-  window.location.href = "/chromebooks";
-  return;
-}
+    const chromebook = getChromebooks().find(
+      (item) => item.id === idChromebook
+    );
 
-setId(chromebook.id);
-setPatrimonio(chromebook.patrimonio);
-setModelo(chromebook.modelo);
-setNumeroSerie(chromebook.numeroSerie);
-setStatus(chromebook.status);
-setUsuario(chromebook.usuario);
-setObservacoes(chromebook.observacoes);
-setCarregando(false);
+    if (!chromebook) {
+      router.push("/chromebooks");
+      return;
+    }
 
-}, []);
+    setId(chromebook.id);
+    setNumero(chromebook.numero);
+    setMac(chromebook.mac);
+    setNumeroSerie(chromebook.numeroSerie);
+    setModelo(chromebook.modelo);
+    setSala(chromebook.sala);
+    setStatus(chromebook.status);
+    setObservacoes(chromebook.observacoes);
+    setCarregando(false);
+  }, [router]);
 
-function salvarAlteracoes() {
-if (!patrimonio || !modelo || !numeroSerie) {
-alert(
-"Preencha Patrimônio, Modelo e Número de série."
-);
-return;
-}
+  function salvarAlteracoes() {
+    if (
+      !numero ||
+      !mac ||
+      !numeroSerie ||
+      !modelo ||
+      !sala
+    ) {
+      alert(
+        "Preencha Número, MAC, Número de série, Modelo e Sala."
+      );
+      return;
+    }
 
-updateChromebook({
-  id,
-  patrimonio,
-  modelo,
-  numeroSerie,
-  status,
-  usuario,
-  observacoes,
-});
+    updateChromebook({
+      id,
+      numero,
+      mac,
+      numeroSerie,
+      modelo,
+      sala,
+      status,
+      observacoes,
+    });
 
-window.location.href = "/chromebooks";
+    router.push("/chromebooks");
+  }
 
-}
-
-if (carregando) {
-return (
-<main className="min-h-screen bg-gray-100 p-8">
-<div className="mx-auto max-w-3xl">
-<p className="text-gray-600">
-Carregando equipamento...
-</p>
-</div>
-</main>
-);
-}
-
-return (
-<main className="min-h-screen bg-gray-100 p-8">
-<div className="mx-auto max-w-3xl">
-<div className="mb-8">
-<h1 className="text-3xl font-bold text-gray-900">
-Editar Chromebook
-</h1>
-
-      <p className="mt-2 text-gray-600">
-        Altere as informações do equipamento.
-      </p>
-    </div>
-
-    <div className="rounded-xl bg-white p-8 shadow">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Patrimônio
-          </label>
-
-          <input
-            type="text"
-            value={patrimonio}
-            onChange={(event) =>
-              setPatrimonio(event.target.value)
-            }
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
-          />
+  if (carregando) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-gray-600 dark:text-gray-300">
+            Carregando equipamento...
+          </p>
         </div>
+      </main>
+    );
+  }
 
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Modelo
-          </label>
-
-          <input
-            type="text"
-            value={modelo}
-            onChange={(event) =>
-              setModelo(event.target.value)
-            }
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Número de série
-          </label>
-
-          <input
-            type="text"
-            value={numeroSerie}
-            onChange={(event) =>
-              setNumeroSerie(event.target.value)
-            }
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">
-            Status
-          </label>
-
-          <select
-            value={status}
-            onChange={(event) =>
-              setStatus(
-                event.target.value as ChromebookStatus
-              )
-            }
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
+  return (
+    <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => router.push("/chromebooks")}
+            className="mb-4 text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
           >
-            <option value="disponivel">
-              Disponível
-            </option>
+            ← Voltar para Chromebooks
+          </button>
 
-            <option value="em-uso">
-              Em uso
-            </option>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Editar Chromebook
+          </h1>
 
-            <option value="manutencao">
-              Em manutenção
-            </option>
-          </select>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            Altere as informações do equipamento.
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-white p-8 shadow transition-colors dark:bg-[#444449]">
+          <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-[#303034]">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              ID permanente
+            </p>
+
+            <p className="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+              {id}
+            </p>
+
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              O ID não pode ser alterado.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Número
+              </label>
+
+              <input
+                type="text"
+                value={numero}
+                onChange={(event) =>
+                  setNumero(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                MAC
+              </label>
+
+              <input
+                type="text"
+                value={mac}
+                onChange={(event) =>
+                  setMac(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Número de série
+              </label>
+
+              <input
+                type="text"
+                value={numeroSerie}
+                onChange={(event) =>
+                  setNumeroSerie(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Modelo
+              </label>
+
+              <input
+                type="text"
+                value={modelo}
+                onChange={(event) =>
+                  setModelo(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Sala
+              </label>
+
+              <input
+                type="text"
+                value={sala}
+                onChange={(event) =>
+                  setSala(event.target.value)
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                Status
+              </label>
+
+              <select
+                value={status}
+                onChange={(event) =>
+                  setStatus(
+                    event.target.value as ChromebookStatus
+                  )
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+              >
+                <option value="disponivel">
+                  Disponível
+                </option>
+
+                <option value="em-uso">
+                  Em uso
+                </option>
+
+                <option value="em-reparo">
+                  Em reparo
+                </option>
+
+                <option value="retirada-de-pecas">
+                  Retirada de peças
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              Observações
+            </label>
+
+            <textarea
+              rows={4}
+              value={observacoes}
+              onChange={(event) =>
+                setObservacoes(event.target.value)
+              }
+              placeholder="Observações sobre o equipamento..."
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+            />
+          </div>
+
+          <div className="mt-8 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/chromebooks")}
+              className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:border-[#66666c] dark:text-gray-100 dark:hover:bg-[#55555b]"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={salvarAlteracoes}
+              className="rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
+            >
+              Salvar alterações
+            </button>
+          </div>
         </div>
       </div>
-
-      <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-gray-700">
-          Usuário / Aluno
-        </label>
-
-        <input
-          type="text"
-          value={usuario}
-          onChange={(event) =>
-            setUsuario(event.target.value)
-          }
-          placeholder="Nome do usuário ou aluno"
-          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
-        />
-      </div>
-
-      <div className="mt-6">
-        <label className="mb-2 block text-sm font-medium text-gray-700">
-          Observações
-        </label>
-
-        <textarea
-          rows={4}
-          value={observacoes}
-          onChange={(event) =>
-            setObservacoes(event.target.value)
-          }
-          placeholder="Observações sobre o equipamento..."
-          className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-black"
-        />
-      </div>
-
-      <div className="mt-8 flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            window.location.href = "/chromebooks";
-          }}
-          className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Cancelar
-        </button>
-
-        <button
-          type="button"
-          onClick={salvarAlteracoes}
-          className="rounded-lg bg-black px-5 py-3 font-medium text-white hover:bg-gray-800"
-        >
-          Salvar alterações
-        </button>
-      </div>
-    </div>
-  </div>
-</main>
-
-);
+    </main>
+  );
 }
