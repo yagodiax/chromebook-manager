@@ -12,6 +12,10 @@ export default function Sidebar() {
     pathname === "/chromebooks" ||
     pathname.startsWith("/chromebooks/");
 
+  const relatoriosAtivo =
+    pathname === "/relatorios/gastos" ||
+    pathname.startsWith("/relatorios/");
+
   const usuariosAtivo =
     pathname === "/usuarios" ||
     pathname.startsWith("/usuarios/");
@@ -61,6 +65,17 @@ export default function Sidebar() {
             }`}
           >
             + Novo Chromebook
+          </Link>
+
+          <Link
+            href="/relatorios/gastos"
+            className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+              relatoriosAtivo
+                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            }`}
+          >
+            Relatório de gastos
           </Link>
 
           <div className="my-4 border-t border-gray-300 dark:border-[#3d3d42]" />

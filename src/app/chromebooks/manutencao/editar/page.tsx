@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,6 +18,12 @@ import type {
 
 const TAMANHO_MAXIMO = 5 * 1024 * 1024;
 
+const classeInput =
+  "mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300";
+
+const classeLabel =
+  "block text-sm font-medium text-gray-700 dark:text-gray-200";
+
 function formatarTamanho(tamanho: number): string {
   if (tamanho < 1024) {
     return tamanho + " B";
@@ -29,9 +36,7 @@ function formatarTamanho(tamanho: number): string {
   return (tamanho / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function arquivoParaBase64(
-  arquivo: File
-): Promise<string> {
+function arquivoParaBase64(arquivo: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
 
@@ -40,9 +45,7 @@ function arquivoParaBase64(
     };
 
     leitor.onerror = () => {
-      reject(
-        new Error("Não foi possível ler o arquivo.")
-      );
+      reject(new Error("Não foi possível ler o arquivo."));
     };
 
     leitor.readAsDataURL(arquivo);
@@ -67,6 +70,11 @@ export default function EditarManutencaoPage() {
   const [descricao, setDescricao] = useState("");
   const [observacao, setObservacao] = useState("");
   const [quemRealizou, setQuemRealizou] = useState("");
+
+  // Novos campos financeiros e de reparo externo.
+  const [custo, setCusto] = useState("");
+  const [destinoReparo, setDestinoReparo] = useState("");
+  const [resultado, setResultado] = useState("");
 
   const [anexos, setAnexos] =
     useState<AnexoManutencao[]>([]);
@@ -104,6 +112,16 @@ export default function EditarManutencaoPage() {
     setDescricao(encontrado.descricao);
     setObservacao(encontrado.observacao);
     setQuemRealizou(encontrado.quemRealizou);
+
+    // Compatibilidade com manutenções antigas sem esses campos.
+    setCusto(
+      encontrado.custo !== undefined
+        ? String(encontrado.custo)
+        : ""
+    );
+    setDestinoReparo(encontrado.destinoReparo ?? "");
+    setResultado(encontrado.resultado ?? "");
+
     setAnexos(encontrado.anexos || []);
     setCarregando(false);
   }, [searchParams]);
@@ -113,9 +131,7 @@ export default function EditarManutencaoPage() {
   ) {
     setErro("");
 
-    const arquivos = Array.from(
-      event.target.files ?? []
-    );
+    const arquivos = Array.from(event.target.files ?? []);
 
     for (const arquivo of arquivos) {
       if (arquivo.size > TAMANHO_MAXIMO) {
@@ -126,29 +142,20 @@ export default function EditarManutencaoPage() {
       }
 
       try {
-        const dados = await arquivoParaBase64(
-          arquivo
-        );
+        const dados = await arquivoParaBase64(arquivo);
 
         const novoAnexo: AnexoManutencao = {
           id:
             Date.now().toString() +
             "-" +
-            Math.random()
-              .toString(36)
-              .substring(2),
+            Math.random().toString(36).substring(2),
           nome: arquivo.name,
-          tipo:
-            arquivo.type ||
-            "application/octet-stream",
+          tipo: arquivo.type || "application/octet-stream",
           tamanho: arquivo.size,
           dados,
         };
 
-        setAnexos((atual) => [
-          ...atual,
-          novoAnexo,
-        ]);
+        setAnexos((atual) => [...atual, novoAnexo]);
       } catch {
         setErro(
           `Não foi possível adicionar o arquivo "${arquivo.name}".`
@@ -187,6 +194,17 @@ export default function EditarManutencaoPage() {
       return;
     }
 
+    let custoNumerico: number | undefined;
+
+    if (custo.trim() !== "") {
+      custoNumerico = Number(custo.replace(",", "."));
+
+      if (!Number.isFinite(custoNumerico) || custoNumerico < 0) {
+        setErro("Informe um custo válido, igual ou maior que zero.");
+        return;
+      }
+    }
+
     setSalvando(true);
 
     try {
@@ -199,6 +217,9 @@ export default function EditarManutencaoPage() {
         observacao: observacao.trim(),
         quemRealizou: quemRealizou.trim(),
         anexos,
+        custo: custoNumerico,
+        destinoReparo: destinoReparo.trim(),
+        resultado: resultado.trim(),
       };
 
       updateManutencao(atualizada);
@@ -251,9 +272,7 @@ export default function EditarManutencaoPage() {
 
           <button
             type="button"
-            onClick={() =>
-              router.push("/chromebooks")
-            }
+            onClick={() => router.push("/chromebooks")}
             className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
           >
             Voltar para Chromebooks
@@ -287,10 +306,9 @@ export default function EditarManutencaoPage() {
 
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
                 ID da manutenção
               </label>
-
               <input
                 type="text"
                 value={manutencao.id}
@@ -300,10 +318,7 @@ export default function EditarManutencaoPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Chromebook
-              </label>
-
+              <label className={classeLabel}>Chromebook</label>
               <input
                 type="text"
                 value={
@@ -321,46 +336,30 @@ export default function EditarManutencaoPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Data
-              </label>
-
+              <label className={classeLabel}>Data</label>
               <input
                 type="date"
                 value={data}
-                onChange={(event) =>
-                  setData(event.target.value)
-                }
-                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                onChange={(event) => setData(event.target.value)}
+                required
+                className={classeInput}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Tipo
-              </label>
-
+              <label className={classeLabel}>Tipo</label>
               <select
                 value={tipo}
                 onChange={(event) =>
-                  setTipo(
-                    event.target.value as TipoManutencao
-                  )
+                  setTipo(event.target.value as TipoManutencao)
                 }
-                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                className={classeInput}
               >
-                <option value="ocorrencia">
-                  Ocorrência
-                </option>
-
-                <option value="manutencao">
-                  Manutenção
-                </option>
-
+                <option value="ocorrencia">Ocorrência</option>
+                <option value="manutencao">Manutenção</option>
                 <option value="reposicao-de-peca">
                   Reposição de Peça
                 </option>
-
                 <option value="envio-para-reparo">
                   Envio para Reparo
                 </option>
@@ -368,10 +367,9 @@ export default function EditarManutencaoPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
                 Categoria do problema
               </label>
-
               <select
                 value={categoria}
                 onChange={(event) =>
@@ -379,85 +377,124 @@ export default function EditarManutencaoPage() {
                     event.target.value as CategoriaManutencao
                   )
                 }
-                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                className={classeInput}
               >
                 <option value="tela">Tela</option>
                 <option value="teclado">Teclado</option>
                 <option value="bateria">Bateria</option>
-                <option value="carregador">
-                  Carregador
-                </option>
-                <option value="touchpad">
-                  Touchpad
-                </option>
+                <option value="carregador">Carregador</option>
+                <option value="touchpad">Touchpad</option>
                 <option value="sistema-operacional">
                   Sistema operacional
                 </option>
                 <option value="wifi">Wi-Fi</option>
-                <option value="bluetooth">
-                  Bluetooth
-                </option>
+                <option value="bluetooth">Bluetooth</option>
                 <option value="audio">Áudio</option>
                 <option value="camera">Câmera</option>
                 <option value="carcaca">Carcaça</option>
-                <option value="dobradica">
-                  Dobradiça
-                </option>
+                <option value="dobradica">Dobradiça</option>
                 <option value="usb">USB</option>
                 <option value="outro">Outro</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Descrição
-              </label>
-
+              <label className={classeLabel}>Descrição</label>
               <textarea
                 value={descricao}
-                onChange={(event) =>
-                  setDescricao(event.target.value)
-                }
+                onChange={(event) => setDescricao(event.target.value)}
                 rows={4}
-                className="mt-2 w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                required
+                className={classeInput + " resize-none"}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
                 Observação
                 <span className="ml-1 font-normal text-gray-400">
                   (opcional)
                 </span>
               </label>
-
               <textarea
                 value={observacao}
-                onChange={(event) =>
-                  setObservacao(event.target.value)
-                }
+                onChange={(event) => setObservacao(event.target.value)}
                 rows={3}
-                className="mt-2 w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                className={classeInput + " resize-none"}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Quem realizou
-              </label>
-
+              <label className={classeLabel}>Quem realizou</label>
               <input
                 type="text"
                 value={quemRealizou}
                 onChange={(event) =>
                   setQuemRealizou(event.target.value)
                 }
-                className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                required
+                className={classeInput}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
+                Custo do serviço (R$)
+                <span className="ml-1 font-normal text-gray-400">
+                  (opcional)
+                </span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={custo}
+                onChange={(event) => setCusto(event.target.value)}
+                placeholder="Ex.: 150,00"
+                className={classeInput}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Deixe em branco se não houve custo.
+              </p>
+            </div>
+
+            <div>
+              <label className={classeLabel}>
+                Destino do reparo
+                <span className="ml-1 font-normal text-gray-400">
+                  (opcional)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={destinoReparo}
+                onChange={(event) =>
+                  setDestinoReparo(event.target.value)
+                }
+                placeholder="Ex.: Oficina ou assistência técnica"
+                className={classeInput}
+              />
+            </div>
+
+            <div>
+              <label className={classeLabel}>
+                Resultado da manutenção
+                <span className="ml-1 font-normal text-gray-400">
+                  (opcional)
+                </span>
+              </label>
+              <textarea
+                value={resultado}
+                onChange={(event) => setResultado(event.target.value)}
+                rows={3}
+                placeholder="Ex.: Tela substituída e equipamento testado."
+                className={classeInput + " resize-none"}
+              />
+            </div>
+
+            <div>
+              <label className={classeLabel}>
                 Anexos
                 <span className="ml-1 font-normal text-gray-400">
                   (opcional)
@@ -495,19 +532,14 @@ export default function EditarManutencaoPage() {
                           <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                             {anexo.nome}
                           </p>
-
                           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {formatarTamanho(
-                              anexo.tamanho
-                            )}
+                            {formatarTamanho(anexo.tamanho)}
                           </p>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            removerAnexo(anexo.id)
-                          }
+                          onClick={() => removerAnexo(anexo.id)}
                           className="ml-4 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-[#4a3838]"
                         >
                           Remover
@@ -541,9 +573,7 @@ export default function EditarManutencaoPage() {
                 onClick={salvar}
                 className="rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
               >
-                {salvando
-                  ? "Salvando..."
-                  : "Salvar alterações"}
+                {salvando ? "Salvando..." : "Salvar alterações"}
               </button>
             </div>
           </div>

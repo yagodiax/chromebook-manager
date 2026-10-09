@@ -1,3 +1,4 @@
+
 export type TipoManutencao =
   | "ocorrencia"
   | "manutencao"
@@ -38,4 +39,8 @@ export type Manutencao = {
   observacao: string;
   quemRealizou: string;
   anexos: AnexoManutencao[];
+
+  custo?: number;
+  destinoReparo?: string;
+  resultado?: string;
 };

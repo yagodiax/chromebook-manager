@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,22 +16,10 @@ const tipos: {
   valor: TipoManutencao;
   nome: string;
 }[] = [
-  {
-    valor: "ocorrencia",
-    nome: "Ocorrência",
-  },
-  {
-    valor: "manutencao",
-    nome: "Manutenção",
-  },
-  {
-    valor: "reposicao-de-peca",
-    nome: "Reposição de Peça",
-  },
-  {
-    valor: "envio-para-reparo",
-    nome: "Envio para Reparo",
-  },
+  { valor: "ocorrencia", nome: "Ocorrência" },
+  { valor: "manutencao", nome: "Manutenção" },
+  { valor: "reposicao-de-peca", nome: "Reposição de Peça" },
+  { valor: "envio-para-reparo", nome: "Envio para Reparo" },
 ];
 
 const categorias: {
@@ -42,10 +31,7 @@ const categorias: {
   { valor: "bateria", nome: "Bateria" },
   { valor: "carregador", nome: "Carregador" },
   { valor: "touchpad", nome: "Touchpad" },
-  {
-    valor: "sistema-operacional",
-    nome: "Sistema operacional",
-  },
+  { valor: "sistema-operacional", nome: "Sistema operacional" },
   { valor: "wifi", nome: "Wi-Fi" },
   { valor: "bluetooth", nome: "Bluetooth" },
   { valor: "audio", nome: "Áudio" },
@@ -70,9 +56,7 @@ function formatarTamanho(tamanho: number): string {
   return (tamanho / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function arquivoParaBase64(
-  arquivo: File
-): Promise<string> {
+function arquivoParaBase64(arquivo: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
 
@@ -81,38 +65,40 @@ function arquivoParaBase64(
     };
 
     leitor.onerror = () => {
-      reject(
-        new Error("Não foi possível ler o arquivo.")
-      );
+      reject(new Error("Não foi possível ler o arquivo."));
     };
 
     leitor.readAsDataURL(arquivo);
   });
 }
 
+const classeInput =
+  "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300";
+
+const classeLabel =
+  "mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200";
+
 export default function NovaManutencaoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const chromebookId =
-    searchParams.get("chromebook");
+  const chromebookId = searchParams.get("chromebook");
 
-  const [chromebook, setChromebook] =
-    useState<Chromebook | null>(null);
+  const [chromebook, setChromebook] = useState<Chromebook | null>(null);
 
   const [data, setData] = useState("");
-  const [tipo, setTipo] =
-    useState<TipoManutencao>("ocorrencia");
-  const [categoria, setCategoria] =
-    useState<CategoriaManutencao>("outro");
+  const [tipo, setTipo] = useState<TipoManutencao>("ocorrencia");
+  const [categoria, setCategoria] = useState<CategoriaManutencao>("outro");
   const [descricao, setDescricao] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [quemRealizou, setQuemRealizou] =
-    useState("");
+  const [quemRealizou, setQuemRealizou] = useState("");
 
-  const [anexos, setAnexos] =
-    useState<AnexoManutencao[]>([]);
+  // Novos campos financeiros e de reparo externo.
+  const [custo, setCusto] = useState("");
+  const [destinoReparo, setDestinoReparo] = useState("");
+  const [resultado, setResultado] = useState("");
 
+  const [anexos, setAnexos] = useState<AnexoManutencao[]>([]);
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
 
@@ -122,17 +108,13 @@ export default function NovaManutencaoPage() {
     }
 
     const chromebooks = getChromebooks();
-
     const encontrado = chromebooks.find(
       (item) => item.id === chromebookId
     );
 
     setChromebook(encontrado ?? null);
 
-    const hoje = new Date()
-      .toISOString()
-      .split("T")[0];
-
+    const hoje = new Date().toISOString().split("T")[0];
     setData(hoje);
   }, [chromebookId]);
 
@@ -141,9 +123,7 @@ export default function NovaManutencaoPage() {
   ) {
     setErro("");
 
-    const arquivos = Array.from(
-      event.target.files ?? []
-    );
+    const arquivos = Array.from(event.target.files ?? []);
 
     for (const arquivo of arquivos) {
       if (arquivo.size > TAMANHO_MAXIMO) {
@@ -154,28 +134,20 @@ export default function NovaManutencaoPage() {
       }
 
       try {
-        const dados =
-          await arquivoParaBase64(arquivo);
+        const dados = await arquivoParaBase64(arquivo);
 
         const novoAnexo: AnexoManutencao = {
           id:
             Date.now().toString() +
             "-" +
-            Math.random()
-              .toString(36)
-              .substring(2),
+            Math.random().toString(36).substring(2),
           nome: arquivo.name,
-          tipo:
-            arquivo.type ||
-            "application/octet-stream",
+          tipo: arquivo.type || "application/octet-stream",
           tamanho: arquivo.size,
           dados,
         };
 
-        setAnexos((atual) => [
-          ...atual,
-          novoAnexo,
-        ]);
+        setAnexos((atual) => [...atual, novoAnexo]);
       } catch {
         setErro(
           `Não foi possível adicionar o arquivo "${arquivo.name}".`
@@ -192,11 +164,8 @@ export default function NovaManutencaoPage() {
     );
   }
 
-  async function salvar(
-    event: React.FormEvent
-  ) {
+  async function salvar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     setErro("");
 
     if (!chromebook) {
@@ -219,6 +188,17 @@ export default function NovaManutencaoPage() {
       return;
     }
 
+    let custoNumerico: number | undefined;
+
+    if (custo.trim() !== "") {
+      custoNumerico = Number(custo.replace(",", "."));
+
+      if (!Number.isFinite(custoNumerico) || custoNumerico < 0) {
+        setErro("Informe um custo válido, igual ou maior que zero.");
+        return;
+      }
+    }
+
     setSalvando(true);
 
     try {
@@ -231,12 +211,12 @@ export default function NovaManutencaoPage() {
         observacao: observacao.trim(),
         quemRealizou: quemRealizou.trim(),
         anexos,
+        custo: custoNumerico,
+        destinoReparo: destinoReparo.trim(),
+        resultado: resultado.trim(),
       });
 
-      router.push(
-        "/chromebooks/detalhes?id=" +
-          chromebook.id
-      );
+      router.push("/chromebooks/detalhes?id=" + chromebook.id);
     } catch {
       setErro(
         "Não foi possível salvar a manutenção. O armazenamento do navegador pode estar cheio."
@@ -251,9 +231,7 @@ export default function NovaManutencaoPage() {
         <div className="mx-auto max-w-4xl">
           <button
             type="button"
-            onClick={() =>
-              router.push("/chromebooks")
-            }
+            onClick={() => router.push("/chromebooks")}
             className="text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
           >
             ← Voltar para Chromebooks
@@ -265,8 +243,7 @@ export default function NovaManutencaoPage() {
             </h1>
 
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
-              Não foi possível localizar o
-              equipamento informado.
+              Não foi possível localizar o equipamento informado.
             </p>
           </div>
         </div>
@@ -280,10 +257,7 @@ export default function NovaManutencaoPage() {
         <button
           type="button"
           onClick={() =>
-            router.push(
-              "/chromebooks/detalhes?id=" +
-                chromebook.id
-            )
+            router.push("/chromebooks/detalhes?id=" + chromebook.id)
           }
           className="text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
         >
@@ -300,8 +274,7 @@ export default function NovaManutencaoPage() {
           </h1>
 
           <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Registre uma ocorrência, manutenção,
-            reposição de peça ou envio para reparo.
+            Registre uma ocorrência, manutenção, reposição de peça ou envio para reparo.
           </p>
         </div>
 
@@ -317,10 +290,7 @@ export default function NovaManutencaoPage() {
 
           <div className="grid gap-6 px-6 py-6 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Chromebook
-              </label>
-
+              <label className={classeLabel}>Chromebook</label>
               <input
                 type="text"
                 value={chromebook.id}
@@ -330,39 +300,27 @@ export default function NovaManutencaoPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Data
-              </label>
-
+              <label className={classeLabel}>Data</label>
               <input
                 type="date"
                 value={data}
-                onChange={(event) =>
-                  setData(event.target.value)
-                }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                onChange={(event) => setData(event.target.value)}
+                required
+                className={classeInput}
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Tipo
-              </label>
-
+              <label className={classeLabel}>Tipo</label>
               <select
                 value={tipo}
                 onChange={(event) =>
-                  setTipo(
-                    event.target.value as TipoManutencao
-                  )
+                  setTipo(event.target.value as TipoManutencao)
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                className={classeInput}
               >
                 {tipos.map((item) => (
-                  <option
-                    key={item.valor}
-                    value={item.valor}
-                  >
+                  <option key={item.valor} value={item.valor}>
                     {item.nome}
                   </option>
                 ))}
@@ -370,24 +328,16 @@ export default function NovaManutencaoPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Categoria do problema
-              </label>
-
+              <label className={classeLabel}>Categoria do problema</label>
               <select
                 value={categoria}
                 onChange={(event) =>
-                  setCategoria(
-                    event.target.value as CategoriaManutencao
-                  )
+                  setCategoria(event.target.value as CategoriaManutencao)
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                className={classeInput}
               >
                 {categorias.map((item) => (
-                  <option
-                    key={item.valor}
-                    value={item.valor}
-                  >
+                  <option key={item.valor} value={item.valor}>
                     {item.nome}
                   </option>
                 ))}
@@ -395,58 +345,101 @@ export default function NovaManutencaoPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Descrição
-              </label>
-
+              <label className={classeLabel}>Descrição</label>
               <textarea
                 value={descricao}
-                onChange={(event) =>
-                  setDescricao(event.target.value)
-                }
+                onChange={(event) => setDescricao(event.target.value)}
                 rows={4}
+                required
                 placeholder="Descreva o problema ou o serviço realizado..."
                 className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
                 Observação
                 <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
                   (opcional)
                 </span>
               </label>
-
               <textarea
                 value={observacao}
-                onChange={(event) =>
-                  setObservacao(event.target.value)
-                }
+                onChange={(event) => setObservacao(event.target.value)}
                 rows={3}
                 placeholder="Alguma informação adicional..."
                 className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Quem realizou
-              </label>
-
+            <div>
+              <label className={classeLabel}>Quem realizou</label>
               <input
                 type="text"
                 value={quemRealizou}
-                onChange={(event) =>
-                  setQuemRealizou(event.target.value)
-                }
+                onChange={(event) => setQuemRealizou(event.target.value)}
+                required
                 placeholder="Nome do responsável"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                className={classeInput}
+              />
+            </div>
+
+            <div>
+              <label className={classeLabel}>
+                Custo do serviço (R$)
+                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                  (opcional)
+                </span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={custo}
+                onChange={(event) => setCusto(event.target.value)}
+                placeholder="Ex.: 150,00"
+                className={classeInput}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Deixe em branco se não houve custo.
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={classeLabel}>
+                Destino do reparo
+                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                  (opcional)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={destinoReparo}
+                onChange={(event) => setDestinoReparo(event.target.value)}
+                placeholder="Ex.: Oficina do João, assistência técnica..."
+                className={classeInput}
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label className={classeLabel}>
+                Resultado da manutenção
+                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                  (opcional)
+                </span>
+              </label>
+              <textarea
+                value={resultado}
+                onChange={(event) => setResultado(event.target.value)}
+                rows={3}
+                placeholder="Ex.: Tela substituída, equipamento testado e funcionando normalmente..."
+                className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={classeLabel}>
                 Anexos
                 <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
                   (opcional)
@@ -484,19 +477,14 @@ export default function NovaManutencaoPage() {
                           <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                             {anexo.nome}
                           </p>
-
                           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {formatarTamanho(
-                              anexo.tamanho
-                            )}
+                            {formatarTamanho(anexo.tamanho)}
                           </p>
                         </div>
 
                         <button
                           type="button"
-                          onClick={() =>
-                            removerAnexo(anexo.id)
-                          }
+                          onClick={() => removerAnexo(anexo.id)}
                           className="ml-4 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-[#553333]"
                         >
                           Remover
@@ -520,10 +508,7 @@ export default function NovaManutencaoPage() {
               type="button"
               disabled={salvando}
               onClick={() =>
-                router.push(
-                  "/chromebooks/detalhes?id=" +
-                    chromebook.id
-                )
+                router.push("/chromebooks/detalhes?id=" + chromebook.id)
               }
               className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-[#66666c] dark:bg-[#444449] dark:text-gray-100 dark:hover:bg-[#55555b]"
             >
@@ -535,9 +520,7 @@ export default function NovaManutencaoPage() {
               disabled={salvando}
               className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
             >
-              {salvando
-                ? "Salvando..."
-                : "Salvar manutenção"}
+              {salvando ? "Salvando..." : "Salvar manutenção"}
             </button>
           </div>
         </form>
