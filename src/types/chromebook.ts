@@ -1,8 +1,9 @@
+
 export type ChromebookStatus =
   | "disponivel"
   | "em-uso"
   | "em-reparo"
-  | "retirada-de-pecas";
+  | "para-descarte";
 
 export type Chromebook = {
   id: string;

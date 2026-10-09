@@ -32,6 +32,14 @@ function formatarData(data: string): string {
   return dataFormatada.toLocaleDateString("pt-BR");
 }
 
+function obterDataLocalISO(data = new Date()): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
+
 function obterDataLimite(periodo: Periodo): Date | null {
   if (periodo === "todo") return null;
 
@@ -57,6 +65,7 @@ function nomeTipo(tipo: Manutencao["tipo"]): string {
     manutencao: "Manutenção",
     "reposicao-de-peca": "Reposição de peça",
     "envio-para-reparo": "Envio para reparo",
+    "retorno-de-reparo": "Retorno de reparo",
   };
 
   return nomes[tipo] ?? tipo;
@@ -88,6 +97,28 @@ function escaparCSV(valor: string | number): string {
   return `"${texto.replace(/"/g, '""')}"`;
 }
 
+/**
+ * O envio para reparo não representa uma despesa final.
+ * O custo real da assistência deve ser registrado no retorno.
+ */
+function obterCustoContabilizavel(manutencao: Manutencao): number {
+  if (manutencao.tipo === "envio-para-reparo") {
+    return 0;
+  }
+
+  const custo = manutencao.custo;
+
+  if (
+    typeof custo !== "number" ||
+    !Number.isFinite(custo) ||
+    custo <= 0
+  ) {
+    return 0;
+  }
+
+  return custo;
+}
+
 export default function RelatorioGastosPage() {
   const [chromebooks, setChromebooks] = useState<Chromebook[]>([]);
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
@@ -111,11 +142,11 @@ export default function RelatorioGastosPage() {
           return false;
         }
 
-        if (!dataLimite) return true;
-
         const data = new Date(`${manutencao.data}T00:00:00`);
 
         if (Number.isNaN(data.getTime())) return false;
+
+        if (!dataLimite) return true;
 
         return data >= dataLimite;
       })
@@ -123,19 +154,8 @@ export default function RelatorioGastosPage() {
   }, [manutencoes, periodo, equipamentoId]);
 
   const totalGasto = manutencoesFiltradas.reduce(
-    (total, manutencao) => {
-      const custo = manutencao.custo;
-
-      if (
-        typeof custo === "number" &&
-        Number.isFinite(custo) &&
-        custo >= 0
-      ) {
-        return total + custo;
-      }
-
-      return total;
-    },
+    (total, manutencao) =>
+      total + obterCustoContabilizavel(manutencao),
     0
   );
 
@@ -143,11 +163,12 @@ export default function RelatorioGastosPage() {
     (manutencao) => manutencao.tipo === "envio-para-reparo"
   ).length;
 
+  const totalRetornos = manutencoesFiltradas.filter(
+    (manutencao) => manutencao.tipo === "retorno-de-reparo"
+  ).length;
+
   const registrosComCusto = manutencoesFiltradas.filter(
-    (manutencao) =>
-      typeof manutencao.custo === "number" &&
-      Number.isFinite(manutencao.custo) &&
-      manutencao.custo > 0
+    (manutencao) => obterCustoContabilizavel(manutencao) > 0
   ).length;
 
   function nomeChromebook(id: string): string {
@@ -164,15 +185,9 @@ export default function RelatorioGastosPage() {
     const agrupamento = new Map<string, ItemRanking>();
 
     manutencoesFiltradas.forEach((manutencao) => {
-      const custo = manutencao.custo;
+      const custo = obterCustoContabilizavel(manutencao);
 
-      if (
-        typeof custo !== "number" ||
-        !Number.isFinite(custo) ||
-        custo <= 0
-      ) {
-        return;
-      }
+      if (custo <= 0) return;
 
       const id = manutencao.chromebookId;
       const existente = agrupamento.get(id);
@@ -199,12 +214,9 @@ export default function RelatorioGastosPage() {
 
   const gastosPorMes = useMemo(() => {
     const agrupamento = new Map<string, number>();
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    const dataLimite = obterDataLimite(periodo);
 
     const datasValidas = manutencoesFiltradas
+      .filter((manutencao) => obterCustoContabilizavel(manutencao) > 0)
       .map((manutencao) => manutencao.data)
       .filter((data) => {
         const dataConvertida = new Date(`${data}T00:00:00`);
@@ -212,16 +224,36 @@ export default function RelatorioGastosPage() {
       })
       .sort();
 
-    const inicio =
-      dataLimite ??
-      (datasValidas.length > 0
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const dataLimite = obterDataLimite(periodo);
+
+    const primeiraData =
+      datasValidas.length > 0
         ? new Date(`${datasValidas[0]}T00:00:00`)
-        : hoje);
+        : null;
 
-    inicio.setDate(1);
+    const ultimaData =
+      datasValidas.length > 0
+        ? new Date(`${datasValidas[datasValidas.length - 1]}T00:00:00`)
+        : null;
 
-    const cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
-    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const inicioBase = dataLimite ?? primeiraData ?? hoje;
+    const fimBase =
+      ultimaData && ultimaData > hoje ? ultimaData : hoje;
+
+    const cursor = new Date(
+      inicioBase.getFullYear(),
+      inicioBase.getMonth(),
+      1
+    );
+
+    const fim = new Date(
+      fimBase.getFullYear(),
+      fimBase.getMonth(),
+      1
+    );
 
     while (cursor <= fim) {
       const chave = `${cursor.getFullYear()}-${String(
@@ -233,15 +265,9 @@ export default function RelatorioGastosPage() {
     }
 
     manutencoesFiltradas.forEach((manutencao) => {
-      const custo = manutencao.custo;
+      const custo = obterCustoContabilizavel(manutencao);
 
-      if (
-        typeof custo !== "number" ||
-        !Number.isFinite(custo) ||
-        custo <= 0
-      ) {
-        return;
-      }
+      if (custo <= 0) return;
 
       const data = new Date(`${manutencao.data}T00:00:00`);
 
@@ -252,7 +278,10 @@ export default function RelatorioGastosPage() {
       ).padStart(2, "0")}`;
 
       if (agrupamento.has(chave)) {
-        agrupamento.set(chave, (agrupamento.get(chave) ?? 0) + custo);
+        agrupamento.set(
+          chave,
+          (agrupamento.get(chave) ?? 0) + custo
+        );
       }
     });
 
@@ -276,6 +305,11 @@ export default function RelatorioGastosPage() {
     1
   );
 
+  const totalGastoNoGrafico = gastosPorMes.reduce(
+    (total, item) => total + item.total,
+    0
+  );
+
   function exportarCSV() {
     const cabecalho = [
       "Data",
@@ -289,7 +323,8 @@ export default function RelatorioGastosPage() {
       "Destino do reparo",
       "Resultado",
       "Responsável",
-      "Custo (R$)",
+      "Custo registrado (R$)",
+      "Custo contabilizado (R$)",
     ];
 
     const linhas = manutencoesFiltradas.map((manutencao) => [
@@ -308,6 +343,9 @@ export default function RelatorioGastosPage() {
       Number.isFinite(manutencao.custo)
         ? manutencao.custo.toFixed(2).replace(".", ",")
         : "",
+      obterCustoContabilizavel(manutencao)
+        .toFixed(2)
+        .replace(".", ","),
     ]);
 
     const conteudo = [cabecalho, ...linhas]
@@ -322,9 +360,7 @@ export default function RelatorioGastosPage() {
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = `relatorio-gastos-${periodo}-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
+    link.download = `relatorio-gastos-${periodo}-${obterDataLocalISO()}.csv`;
 
     document.body.appendChild(link);
     link.click();
@@ -439,14 +475,20 @@ export default function RelatorioGastosPage() {
             <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
               {totalEnvios}
             </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Registrados no período
+            </p>
           </div>
 
           <div className="rounded-xl bg-white p-6 shadow dark:bg-[#444449]">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Registros com custo
+              Retornos de reparo
             </p>
             <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {registrosComCusto}
+              {totalRetornos}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {registrosComCusto} registros com custo contabilizado
             </p>
           </div>
         </section>
@@ -506,9 +548,7 @@ export default function RelatorioGastosPage() {
             </span>
 
             <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              {formatarMoeda(
-                gastosPorMes.reduce((total, item) => total + item.total, 0)
-              )}
+              {formatarMoeda(totalGastoNoGrafico)}
             </span>
           </div>
         </section>
@@ -588,7 +628,9 @@ export default function RelatorioGastosPage() {
             </h2>
 
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              A exportação inclui apenas os registros exibidos pelos filtros.
+              Os envios aparecem no histórico, mas não entram no total gasto.
+              O custo contabilizado é o valor final registrado no retorno ou
+              em uma manutenção com custo.
             </p>
           </div>
 
@@ -626,62 +668,66 @@ export default function RelatorioGastosPage() {
                       Resultado
                     </th>
                     <th className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Custo
+                      Custo contabilizado
                     </th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {manutencoesFiltradas.map((manutencao) => (
-                    <tr
-                      key={manutencao.id}
-                      className="border-b border-gray-100 last:border-0 dark:border-[#505057]"
-                    >
-                      <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {formatarData(manutencao.data)}
-                      </td>
+                  {manutencoesFiltradas.map((manutencao) => {
+                    const custoContabilizado =
+                      obterCustoContabilizavel(manutencao);
 
-                      <td className="px-5 py-4 text-sm text-gray-900 dark:text-gray-100">
-                        <div className="font-medium">
-                          {nomeChromebook(manutencao.chromebookId)}
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {manutencao.id}
-                        </div>
-                      </td>
+                    return (
+                      <tr
+                        key={manutencao.id}
+                        className="border-b border-gray-100 last:border-0 dark:border-[#505057]"
+                      >
+                        <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {formatarData(manutencao.data)}
+                        </td>
 
-                      <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        <div>{nomeTipo(manutencao.tipo)}</div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {nomeCategoria(manutencao.categoria)}
-                        </div>
-                      </td>
-
-                      <td className="min-w-48 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        <div>{manutencao.descricao || "—"}</div>
-                        {manutencao.observacao && (
-                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {manutencao.observacao}
+                        <td className="px-5 py-4 text-sm text-gray-900 dark:text-gray-100">
+                          <div className="font-medium">
+                            {nomeChromebook(manutencao.chromebookId)}
                           </div>
-                        )}
-                      </td>
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {manutencao.id}
+                          </div>
+                        </td>
 
-                      <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {manutencao.destinoReparo || "—"}
-                      </td>
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          <div>{nomeTipo(manutencao.tipo)}</div>
+                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {nomeCategoria(manutencao.categoria)}
+                          </div>
+                        </td>
 
-                      <td className="min-w-40 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                        {manutencao.resultado || "—"}
-                      </td>
+                        <td className="min-w-48 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          <div>{manutencao.descricao || "—"}</div>
+                          {manutencao.observacao && (
+                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {manutencao.observacao}
+                            </div>
+                          )}
+                        </td>
 
-                      <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {typeof manutencao.custo === "number" &&
-                        Number.isFinite(manutencao.custo)
-                          ? formatarMoeda(manutencao.custo)
-                          : "Não informado"}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {manutencao.destinoReparo || "—"}
+                        </td>
+
+                        <td className="min-w-40 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                          {manutencao.resultado || "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {custoContabilizado > 0
+                            ? formatarMoeda(custoContabilizado)
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
 
                 <tfoot>

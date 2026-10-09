@@ -14,8 +14,8 @@ import type { Manutencao } from "@/types/manutencao";
 function obterStatusLabel(status: Chromebook["status"]): string {
   if (status === "disponivel") return "Disponível";
   if (status === "em-uso") return "Em uso";
-  if (status === "em-reparo") return "Em reparo";
-  return "Retirada de peças";
+  if (status === "em-reparo") return "No reparo";
+  return "Para descarte";
 }
 
 function obterStatusClasse(status: Chromebook["status"]): string {
@@ -38,7 +38,8 @@ function obterTipoLabel(tipo: Manutencao["tipo"]): string {
   if (tipo === "ocorrencia") return "Ocorrência";
   if (tipo === "manutencao") return "Manutenção";
   if (tipo === "reposicao-de-peca") return "Reposição de Peça";
-  return "Envio para Reparo";
+  if (tipo === "envio-para-reparo") return "Envio para Reparo";
+  return "Retorno de Reparo";
 }
 
 function obterCategoriaLabel(
@@ -83,6 +84,7 @@ function formatarMoeda(valor: number): string {
 
 function formatarTamanho(tamanho: number): string {
   if (tamanho < 1024) return `${tamanho} B`;
+
   if (tamanho < 1024 * 1024) {
     return `${(tamanho / 1024).toFixed(1)} KB`;
   }
@@ -101,32 +103,49 @@ export default function DetalhesChromebookPage() {
     useState<Manutencao[]>([]);
 
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = searchParams.get("id");
+    try {
+      const id = searchParams.get("id");
 
-    if (!id) {
+      if (!id) {
+        setErro("Nenhum Chromebook foi informado.");
+        return;
+      }
+
+      const encontrado = getChromebooks().find(
+        (item) => item.id === id
+      );
+
+      if (!encontrado) {
+        setChromebook(null);
+        return;
+      }
+
+      const manutencoesDoChromebook = getManutencoes()
+        .filter((item) => item.chromebookId === id)
+        .sort((a, b) => b.data.localeCompare(a.data));
+
+      setChromebook(encontrado);
+      setManutencoes(manutencoesDoChromebook);
+    } catch {
+      setErro(
+        "Não foi possível carregar os dados. Verifique o armazenamento do navegador e tente novamente."
+      );
+    } finally {
       setCarregando(false);
-      return;
     }
-
-    const encontrado = getChromebooks().find(
-      (item) => item.id === id
-    );
-
-    const manutencoesDoChromebook = getManutencoes()
-      .filter((item) => item.chromebookId === id)
-      .sort((a, b) => b.data.localeCompare(a.data));
-
-    setChromebook(encontrado ?? null);
-    setManutencoes(manutencoesDoChromebook);
-    setCarregando(false);
   }, [searchParams]);
 
   function abrirEdicao() {
     if (!chromebook) return;
 
-    router.push("/chromebooks/editar?id=" + chromebook.id);
+    router.push(
+      "/chromebooks/editar?id=" +
+        encodeURIComponent(chromebook.id)
+    );
   }
 
   function registrarManutencao() {
@@ -134,49 +153,86 @@ export default function DetalhesChromebookPage() {
 
     router.push(
       "/chromebooks/manutencao/nova?chromebook=" +
-        chromebook.id
+        encodeURIComponent(chromebook.id)
+    );
+  }
+
+  function registrarRetornoReparo() {
+    if (!chromebook) return;
+
+    router.push(
+      "/chromebooks/manutencao/retorno?chromebook=" +
+        encodeURIComponent(chromebook.id)
     );
   }
 
   function editarManutencao(id: string) {
-    router.push("/chromebooks/manutencao/editar?id=" + id);
+    router.push(
+      "/chromebooks/manutencao/editar?id=" +
+        encodeURIComponent(id)
+    );
   }
 
   function excluirManutencao(id: string) {
+    if (excluindoId) return;
+
     const confirmar = window.confirm(
-      "Tem certeza que deseja excluir este registro de manutenção?"
+      "Tem certeza que deseja excluir este registro de manutenção? Esta ação não pode ser desfeita."
     );
 
     if (!confirmar) return;
 
-    deleteManutencao(id);
+    setErro("");
+    setExcluindoId(id);
 
-    setManutencoes((atual) =>
-      atual.filter((item) => item.id !== id)
-    );
+    try {
+      // Primeiro exclui do armazenamento. Só depois atualiza a tela.
+      deleteManutencao(id);
+
+      setManutencoes((atuais) =>
+        atuais.filter((item) => item.id !== id)
+      );
+    } catch (erroExclusao) {
+      const mensagem =
+        erroExclusao instanceof Error
+          ? erroExclusao.message
+          : "";
+
+      setErro(
+        mensagem
+          ? `Não foi possível excluir o registro: ${mensagem}`
+          : "Não foi possível excluir o registro. Os dados foram mantidos na tela."
+      );
+    } finally {
+      setExcluindoId(null);
+    }
   }
 
   function abrirAnexo(dados: string) {
-    const novaAba = window.open("", "_blank");
+    try {
+      const novaAba = window.open("", "_blank");
 
-    if (!novaAba) {
-      alert(
-        "O navegador bloqueou a abertura do arquivo. Permita pop-ups para este site."
-      );
-      return;
+      if (!novaAba) {
+        setErro(
+          "O navegador bloqueou a abertura do arquivo. Permita pop-ups para este site."
+        );
+        return;
+      }
+
+      const iframe = novaAba.document.createElement("iframe");
+      iframe.src = dados;
+      iframe.title = "Anexo";
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.style.border = "0";
+
+      novaAba.document.body.style.margin = "0";
+      novaAba.document.body.style.height = "100vh";
+      novaAba.document.body.style.background = "#222226";
+      novaAba.document.body.appendChild(iframe);
+    } catch {
+      setErro("Não foi possível abrir o anexo.");
     }
-
-    const iframe = novaAba.document.createElement("iframe");
-    iframe.src = dados;
-    iframe.title = "Anexo";
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "0";
-
-    novaAba.document.body.style.margin = "0";
-    novaAba.document.body.style.height = "100vh";
-    novaAba.document.body.style.background = "#222226";
-    novaAba.document.body.appendChild(iframe);
   }
 
   if (carregando) {
@@ -198,7 +254,8 @@ export default function DetalhesChromebookPage() {
           </h1>
 
           <p className="mt-2 text-gray-600 dark:text-gray-300">
-            O Chromebook informado não existe no sistema.
+            {erro ||
+              "O Chromebook informado não existe no sistema."}
           </p>
 
           <button
@@ -216,22 +273,35 @@ export default function DetalhesChromebookPage() {
   const ultimaManutencao =
     manutencoes.length > 0 ? manutencoes[0] : null;
 
-  // Os totais são calculados a partir dos próprios registros.
-  // Não criamos um segundo lançamento financeiro, evitando duplicidade.
-  const custoTotal = manutencoes.reduce(
-    (total, item) =>
-      total +
-      (typeof item.custo === "number" && Number.isFinite(item.custo)
-        ? item.custo
-        : 0),
-    0
-  );
+  const custoTotal = manutencoes.reduce((total, item) => {
+    // Envio para reparo não representa o custo final do serviço.
+    if (item.tipo === "envio-para-reparo") {
+      return total;
+    }
+
+    const custoItem = item.custo;
+
+    if (
+      typeof custoItem !== "number" ||
+      !Number.isFinite(custoItem) ||
+      custoItem < 0
+    ) {
+      return total;
+    }
+
+    return total + custoItem;
+  }, 0);
 
   const reparos = manutencoes.filter(
     (item) => item.tipo === "envio-para-reparo"
   );
 
+  const retornos = manutencoes.filter(
+    (item) => item.tipo === "retorno-de-reparo"
+  );
+
   const ultimoReparo = reparos.length > 0 ? reparos[0] : null;
+  const ultimoRetorno = retornos.length > 0 ? retornos[0] : null;
 
   return (
     <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
@@ -263,6 +333,23 @@ export default function DetalhesChromebookPage() {
             Editar Chromebook
           </button>
         </div>
+
+        {erro && (
+          <div
+            role="alert"
+            className="mb-6 flex flex-col justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-[#684545] dark:bg-[#4a3838] dark:text-red-200 sm:flex-row sm:items-center"
+          >
+            <p>{erro}</p>
+
+            <button
+              type="button"
+              onClick={() => setErro("")}
+              className="shrink-0 self-start font-medium underline sm:self-center"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-colors lg:col-span-2 dark:border-[#5a5a60] dark:bg-[#444449]">
@@ -408,6 +495,27 @@ export default function DetalhesChromebookPage() {
                 </p>
               </div>
 
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Último retorno da assistência
+                </p>
+                <p className="mt-1 font-medium text-gray-900 dark:text-gray-100">
+                  {ultimoRetorno
+                    ? formatarData(ultimoRetorno.data)
+                    : "Nenhum registrado"}
+                </p>
+              </div>
+
+              {chromebook.status === "em-reparo" && (
+                <button
+                  type="button"
+                  onClick={registrarRetornoReparo}
+                  className="w-full rounded-lg bg-green-700 px-4 py-3 text-sm font-medium text-white transition hover:bg-green-800 dark:bg-green-600 dark:hover:bg-green-500"
+                >
+                  ✓ Registrar retorno do reparo
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={registrarManutencao}
@@ -427,7 +535,7 @@ export default function DetalhesChromebookPage() {
                   Histórico de manutenção
                 </h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-                  Serviços, resultados e custos registrados para este Chromebook.
+                  Ocorrências, envios, retornos, resultados e custos do equipamento.
                 </p>
               </div>
 
@@ -443,7 +551,7 @@ export default function DetalhesChromebookPage() {
                 Nenhuma manutenção registrada
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-                Os registros de ocorrência, manutenção, reposição de peça e envio para reparo aparecerão aqui.
+                Os registros do equipamento aparecerão aqui.
               </p>
             </div>
           ) : (
@@ -532,7 +640,9 @@ export default function DetalhesChromebookPage() {
                       </td>
 
                       <td className="whitespace-nowrap px-5 py-4 align-top font-semibold text-gray-900 dark:text-gray-100">
-                        {typeof manutencao.custo === "number"
+                        {typeof manutencao.custo === "number" &&
+                        Number.isFinite(manutencao.custo) &&
+                        manutencao.custo >= 0
                           ? formatarMoeda(manutencao.custo)
                           : "—"}
                       </td>
@@ -579,18 +689,22 @@ export default function DetalhesChromebookPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
+                            disabled={excluindoId !== null}
                             onClick={() => editarManutencao(manutencao.id)}
-                            className="rounded-lg px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-[#3f454c]"
+                            className="rounded-lg px-3 py-2 text-sm font-medium text-blue-600 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-blue-300 dark:hover:bg-[#3f454c]"
                           >
                             Editar
                           </button>
 
                           <button
                             type="button"
+                            disabled={excluindoId !== null}
                             onClick={() => excluirManutencao(manutencao.id)}
-                            className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-[#4a3838]"
+                            className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-300 dark:hover:bg-[#4a3838]"
                           >
-                            Excluir
+                            {excluindoId === manutencao.id
+                              ? "Excluindo..."
+                              : "Excluir"}
                           </button>
                         </div>
                       </td>

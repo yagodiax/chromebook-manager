@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState } from "react";
 import { saveChromebook } from "@/lib/chromebooks";
-import { ChromebookStatus } from "@/types/chromebook";
+import type { ChromebookStatus } from "@/types/chromebook";
 
 export default function NovoChromebookPage() {
   const [numero, setNumero] = useState("");
@@ -27,11 +28,11 @@ export default function NovoChromebookPage() {
 
   function cadastrar() {
     if (
-      !numero ||
-      !mac ||
-      !numeroSerie ||
-      !modelo ||
-      !sala
+      !numero.trim() ||
+      !mac.trim() ||
+      !numeroSerie.trim() ||
+      !modelo.trim() ||
+      !sala.trim()
     ) {
       alert(
         "Preencha Número, MAC, Número de série, Modelo e Sala."
@@ -39,15 +40,22 @@ export default function NovoChromebookPage() {
       return;
     }
 
+    if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(mac)) {
+      alert(
+        "O MAC precisa conter 12 caracteres hexadecimais, no formato AA:BB:CC:DD:EE:FF."
+      );
+      return;
+    }
+
     try {
       saveChromebook({
-        numero,
-        mac,
-        numeroSerie,
-        modelo,
-        sala,
+        numero: numero.trim(),
+        mac: mac.toUpperCase(),
+        numeroSerie: numeroSerie.trim(),
+        modelo: modelo.trim(),
+        sala: sala.trim(),
         status,
-        observacoes,
+        observacoes: observacoes.trim(),
       });
 
       window.location.href = "/chromebooks";
@@ -55,15 +63,13 @@ export default function NovoChromebookPage() {
       if (error instanceof Error) {
         alert(error.message);
       } else {
-        alert(
-          "Não foi possível cadastrar o Chromebook."
-        );
+        alert("Não foi possível cadastrar o Chromebook.");
       }
     }
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
+    <main className="min-h-screen bg-gray-100 p-5 transition-colors sm:p-8 dark:bg-[#3a3a3f]">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
           <button
@@ -85,154 +91,182 @@ export default function NovoChromebookPage() {
           </p>
         </div>
 
-        <div className="rounded-xl bg-white p-8 shadow transition-colors dark:bg-[#444449]">
+        <div className="rounded-xl bg-white p-6 shadow transition-colors sm:p-8 dark:bg-[#444449]">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               Identificação
             </h2>
 
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
-              O ID permanente será gerado
-              automaticamente pelo sistema.
+              O ID permanente será gerado automaticamente pelo sistema.
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label
+                htmlFor="numero"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
                 Número
               </label>
 
               <input
+                id="numero"
                 type="text"
                 value={numero}
                 onChange={(event) =>
                   setNumero(event.target.value)
                 }
-                placeholder="Ex: 001"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                placeholder="Ex.: 001"
+                required
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                MAC
+              <label
+                htmlFor="mac"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
+                Endereço MAC
               </label>
 
               <input
+                id="mac"
                 type="text"
                 value={mac}
                 onChange={(event) =>
-                  setMac(
-                    formatarMac(
-                      event.target.value
-                    )
-                  )
+                  setMac(formatarMac(event.target.value))
                 }
-                placeholder="Ex: AA:BB:CC:DD:EE:FF"
+                placeholder="AA:BB:CC:DD:EE:FF"
                 maxLength={17}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                required
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label
+                htmlFor="numeroSerie"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
                 Número de série
               </label>
 
               <input
+                id="numeroSerie"
                 type="text"
                 value={numeroSerie}
                 onChange={(event) =>
                   setNumeroSerie(event.target.value)
                 }
-                placeholder="Número de série"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                placeholder="Número de série do equipamento"
+                required
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+              <label
+                htmlFor="modelo"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
                 Modelo
               </label>
 
               <input
+                id="modelo"
                 type="text"
                 value={modelo}
                 onChange={(event) =>
                   setModelo(event.target.value)
                 }
-                placeholder="Ex: Acer Chromebook 311"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                placeholder="Ex.: Acer Chromebook 311"
+                required
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Sala
+              <label
+                htmlFor="sala"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
+                Sala de destino
               </label>
 
               <input
+                id="sala"
                 type="text"
                 value={sala}
                 onChange={(event) =>
                   setSala(event.target.value)
                 }
-                placeholder="Ex: Sala 203"
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                placeholder="Ex.: Sala 203 ou Reserva"
+                required
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
-                Status
+              <label
+                htmlFor="status"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
+                Situação inicial
               </label>
 
               <select
+                id="status"
                 value={status}
                 onChange={(event) =>
                   setStatus(
                     event.target.value as ChromebookStatus
                   )
                 }
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:focus:border-gray-300"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100"
               >
                 <option value="disponivel">
-                  Disponível
+                  Disponível — equipamento reserva
                 </option>
 
                 <option value="em-uso">
-                  Em uso
+                  Em uso — em operação
                 </option>
 
                 <option value="em-reparo">
-                  Em reparo
+                  No reparo — enviado à assistência
                 </option>
 
-                <option value="retirada-de-pecas">
-                  Retirada de peças
+                <option value="para-descarte">
+                  Para descarte — fora de circulação
                 </option>
               </select>
             </div>
           </div>
 
           <div className="mt-6">
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200">
+            <label
+              htmlFor="observacoes"
+              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+            >
               Observações
             </label>
 
             <textarea
+              id="observacoes"
               rows={4}
               value={observacoes}
               onChange={(event) =>
                 setObservacoes(event.target.value)
               }
-              placeholder="Observações sobre o equipamento..."
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+              placeholder="Informações adicionais sobre o equipamento..."
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
             />
           </div>
 
-          <div className="mt-8 flex justify-end gap-3">
+          <div className="mt-8 flex flex-col-reverse justify-end gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => {

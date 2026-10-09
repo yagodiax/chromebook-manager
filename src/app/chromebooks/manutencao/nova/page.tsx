@@ -1,10 +1,16 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getChromebooks } from "@/lib/chromebooks";
-import { saveManutencao } from "@/lib/manutencoes";
+import {
+  getChromebooks,
+  updateChromebook,
+} from "@/lib/chromebooks";
+import {
+  deleteManutencao,
+  saveManutencao,
+} from "@/lib/manutencoes";
 import type {
   AnexoManutencao,
   CategoriaManutencao,
@@ -43,17 +49,42 @@ const categorias: {
 ];
 
 const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+const QUANTIDADE_MAXIMA_ANEXOS = 5;
+
+function obterDataLocal(): string {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function dataISOValida(data: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    return false;
+  }
+
+  const [ano, mes, dia] = data.split("-").map(Number);
+  const dataConvertida = new Date(ano, mes - 1, dia);
+
+  return (
+    dataConvertida.getFullYear() === ano &&
+    dataConvertida.getMonth() === mes - 1 &&
+    dataConvertida.getDate() === dia
+  );
+}
 
 function formatarTamanho(tamanho: number): string {
   if (tamanho < 1024) {
-    return tamanho + " B";
+    return `${tamanho} B`;
   }
 
   if (tamanho < 1024 * 1024) {
-    return (tamanho / 1024).toFixed(1) + " KB";
+    return `${(tamanho / 1024).toFixed(1)} KB`;
   }
 
-  return (tamanho / (1024 * 1024)).toFixed(1) + " MB";
+  return `${(tamanho / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function arquivoParaBase64(arquivo: File): Promise<string> {
@@ -61,7 +92,12 @@ function arquivoParaBase64(arquivo: File): Promise<string> {
     const leitor = new FileReader();
 
     leitor.onload = () => {
-      resolve(String(leitor.result));
+      if (typeof leitor.result !== "string") {
+        reject(new Error("O conteúdo do arquivo é inválido."));
+        return;
+      }
+
+      resolve(leitor.result);
     };
 
     leitor.onerror = () => {
@@ -81,100 +117,178 @@ const classeLabel =
 export default function NovaManutencaoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const chromebookId = searchParams.get("chromebook");
 
-  const [chromebook, setChromebook] = useState<Chromebook | null>(null);
+  const salvandoRef = useRef(false);
+  const processandoAnexosRef = useRef(false);
 
+  const [chromebook, setChromebook] =
+    useState<Chromebook | null>(null);
+
+  const [carregando, setCarregando] = useState(true);
   const [data, setData] = useState("");
-  const [tipo, setTipo] = useState<TipoManutencao>("ocorrencia");
-  const [categoria, setCategoria] = useState<CategoriaManutencao>("outro");
+  const [tipo, setTipo] =
+    useState<TipoManutencao>("ocorrencia");
+  const [categoria, setCategoria] =
+    useState<CategoriaManutencao>("outro");
   const [descricao, setDescricao] = useState("");
   const [observacao, setObservacao] = useState("");
   const [quemRealizou, setQuemRealizou] = useState("");
-
-  // Novos campos financeiros e de reparo externo.
   const [custo, setCusto] = useState("");
   const [destinoReparo, setDestinoReparo] = useState("");
   const [resultado, setResultado] = useState("");
-
   const [anexos, setAnexos] = useState<AnexoManutencao[]>([]);
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [processandoAnexos, setProcessandoAnexos] = useState(false);
 
   useEffect(() => {
     if (!chromebookId) {
+      setCarregando(false);
+      setErro("Não foi informado o identificador do Chromebook.");
       return;
     }
 
-    const chromebooks = getChromebooks();
-    const encontrado = chromebooks.find(
-      (item) => item.id === chromebookId
-    );
+    try {
+      const encontrado = getChromebooks().find(
+        (item) => item.id === chromebookId
+      );
 
-    setChromebook(encontrado ?? null);
+      setChromebook(encontrado ?? null);
+      setData(obterDataLocal());
 
-    const hoje = new Date().toISOString().split("T")[0];
-    setData(hoje);
+      if (!encontrado) {
+        setErro("Não foi possível localizar o Chromebook.");
+      }
+    } catch (erroLeitura) {
+      setChromebook(null);
+      setErro(
+        erroLeitura instanceof Error
+          ? erroLeitura.message
+          : "Não foi possível carregar os dados do Chromebook."
+      );
+    } finally {
+      setCarregando(false);
+    }
   }, [chromebookId]);
 
   async function selecionarArquivos(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    setErro("");
+    const arquivosSelecionados = Array.from(
+      event.target.files ?? []
+    );
 
-    const arquivos = Array.from(event.target.files ?? []);
+    // Libera o mesmo arquivo para ser selecionado novamente.
+    event.target.value = "";
 
-    for (const arquivo of arquivos) {
-      if (arquivo.size > TAMANHO_MAXIMO) {
-        setErro(
-          `O arquivo "${arquivo.name}" ultrapassa o limite de 5 MB.`
-        );
-        continue;
-      }
-
-      try {
-        const dados = await arquivoParaBase64(arquivo);
-
-        const novoAnexo: AnexoManutencao = {
-          id:
-            Date.now().toString() +
-            "-" +
-            Math.random().toString(36).substring(2),
-          nome: arquivo.name,
-          tipo: arquivo.type || "application/octet-stream",
-          tamanho: arquivo.size,
-          dados,
-        };
-
-        setAnexos((atual) => [...atual, novoAnexo]);
-      } catch {
-        setErro(
-          `Não foi possível adicionar o arquivo "${arquivo.name}".`
-        );
-      }
+    if (arquivosSelecionados.length === 0) {
+      return;
     }
 
-    event.target.value = "";
+    if (processandoAnexosRef.current || salvandoRef.current) {
+      setErro("Aguarde o processamento atual antes de continuar.");
+      return;
+    }
+
+    processandoAnexosRef.current = true;
+    setProcessandoAnexos(true);
+    setErro("");
+
+    const novosAnexos: AnexoManutencao[] = [];
+    const errosArquivos: string[] = [];
+
+    try {
+      for (const arquivo of arquivosSelecionados) {
+        if (
+          anexos.length + novosAnexos.length >=
+          QUANTIDADE_MAXIMA_ANEXOS
+        ) {
+          errosArquivos.push(
+            `O limite de ${QUANTIDADE_MAXIMA_ANEXOS} anexos foi atingido.`
+          );
+          break;
+        }
+
+        if (arquivo.size > TAMANHO_MAXIMO) {
+          errosArquivos.push(
+            `O arquivo "${arquivo.name}" ultrapassa o limite de 5 MB.`
+          );
+          continue;
+        }
+
+        try {
+          const dados = await arquivoParaBase64(arquivo);
+
+          novosAnexos.push({
+            id:
+              `${Date.now()}-` +
+              Math.random().toString(36).substring(2),
+            nome: arquivo.name,
+            tipo: arquivo.type || "application/octet-stream",
+            tamanho: arquivo.size,
+            dados,
+          });
+        } catch {
+          errosArquivos.push(
+            `Não foi possível adicionar o arquivo "${arquivo.name}".`
+          );
+        }
+      }
+
+      if (novosAnexos.length > 0) {
+        setAnexos((atuais) => [
+          ...atuais,
+          ...novosAnexos,
+        ]);
+      }
+
+      if (errosArquivos.length > 0) {
+        setErro(errosArquivos.join(" "));
+      }
+    } finally {
+      processandoAnexosRef.current = false;
+      setProcessandoAnexos(false);
+    }
   }
 
   function removerAnexo(id: string) {
-    setAnexos((atual) =>
-      atual.filter((anexo) => anexo.id !== id)
+    if (processandoAnexosRef.current || salvandoRef.current) {
+      return;
+    }
+
+    setAnexos((atuais) =>
+      atuais.filter((anexo) => anexo.id !== id)
     );
+    setErro("");
   }
 
   async function salvar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (salvandoRef.current) {
+      return;
+    }
+
     setErro("");
+
+    if (processandoAnexosRef.current) {
+      setErro("Aguarde o término do processamento dos anexos.");
+      return;
+    }
 
     if (!chromebook) {
       setErro("Chromebook não encontrado.");
       return;
     }
 
-    if (!data) {
-      setErro("Informe a data.");
+    if (!dataISOValida(data)) {
+      setErro("Informe uma data válida.");
+      return;
+    }
+
+    if (data > obterDataLocal()) {
+      setErro("A data não pode ser futura.");
       return;
     }
 
@@ -188,41 +302,174 @@ export default function NovaManutencaoPage() {
       return;
     }
 
+    if (
+      anexos.length > QUANTIDADE_MAXIMA_ANEXOS ||
+      anexos.some(
+        (anexo) =>
+          !Number.isFinite(anexo.tamanho) ||
+          anexo.tamanho < 0 ||
+          anexo.tamanho > TAMANHO_MAXIMO
+      )
+    ) {
+      setErro("Confira os anexos antes de salvar a manutenção.");
+      return;
+    }
+
+    if (
+      tipo === "envio-para-reparo" &&
+      !destinoReparo.trim()
+    ) {
+      setErro("Informe a assistência ou o destino do reparo.");
+      return;
+    }
+
+    if (
+      tipo === "envio-para-reparo" &&
+      chromebook.status !== "em-uso" &&
+      chromebook.status !== "disponivel"
+    ) {
+      setErro(
+        chromebook.status === "em-reparo"
+          ? "Este Chromebook já está marcado como No reparo."
+          : "Um Chromebook para descarte não pode ser enviado para reparo por este formulário."
+      );
+      return;
+    }
+
     let custoNumerico: number | undefined;
 
-    if (custo.trim() !== "") {
-      custoNumerico = Number(custo.replace(",", "."));
+    // O custo da assistência externa só é registrado no retorno.
+    if (tipo !== "envio-para-reparo" && custo.trim() !== "") {
+      const valorInformado = Number(custo.replace(",", "."));
 
-      if (!Number.isFinite(custoNumerico) || custoNumerico < 0) {
-        setErro("Informe um custo válido, igual ou maior que zero.");
+      if (
+        !Number.isFinite(valorInformado) ||
+        valorInformado < 0
+      ) {
+        setErro(
+          "Informe um custo válido, igual ou maior que zero."
+        );
+        return;
+      }
+
+      custoNumerico = Math.round(
+        (valorInformado + Number.EPSILON) * 100
+      ) / 100;
+
+      if (!Number.isFinite(custoNumerico)) {
+        setErro("O custo informado é muito alto.");
         return;
       }
     }
 
+    salvandoRef.current = true;
     setSalvando(true);
 
+    let manutencaoSalva: { id: string } | null = null;
+    let estadoAtual: Chromebook | undefined;
+    let atualizacaoDeStatusTentada = false;
+    let erroAoReverter = false;
+    let erroAoExcluirHistorico = false;
+
     try {
-      saveManutencao({
-        chromebookId: chromebook.id,
+      // Consulta novamente os dados imediatamente antes de gravar.
+      const chromebooksAtuais = getChromebooks();
+
+      estadoAtual = chromebooksAtuais.find(
+        (item) => item.id === chromebook.id
+      );
+
+      if (!estadoAtual) {
+        throw new Error(
+          "O Chromebook não foi encontrado no armazenamento."
+        );
+      }
+
+      if (
+        tipo === "envio-para-reparo" &&
+        estadoAtual.status !== "em-uso" &&
+        estadoAtual.status !== "disponivel"
+      ) {
+        throw new Error(
+          estadoAtual.status === "em-reparo"
+            ? "Este Chromebook já está marcado como No reparo."
+            : "A situação atual do Chromebook não permite enviá-lo para reparo."
+        );
+      }
+
+      manutencaoSalva = saveManutencao({
+        chromebookId: estadoAtual.id,
         data,
         tipo,
         categoria,
         descricao: descricao.trim(),
         observacao: observacao.trim(),
         quemRealizou: quemRealizou.trim(),
-        anexos,
-        custo: custoNumerico,
+        anexos: [...anexos],
+        custo:
+          tipo === "envio-para-reparo"
+            ? undefined
+            : custoNumerico,
         destinoReparo: destinoReparo.trim(),
         resultado: resultado.trim(),
       });
 
-      router.push("/chromebooks/detalhes?id=" + chromebook.id);
-    } catch {
-      setErro(
-        "Não foi possível salvar a manutenção. O armazenamento do navegador pode estar cheio."
-      );
+      if (tipo === "envio-para-reparo") {
+        // Registra a tentativa antes de atualizar o status.
+        atualizacaoDeStatusTentada = true;
+
+        updateChromebook({
+          ...estadoAtual,
+          status: "em-reparo",
+        });
+      }
+    } catch (erroOperacao) {
+      if (atualizacaoDeStatusTentada && estadoAtual) {
+        try {
+          updateChromebook(estadoAtual);
+        } catch {
+          erroAoReverter = true;
+        }
+      }
+
+      if (manutencaoSalva) {
+        try {
+          deleteManutencao(manutencaoSalva.id);
+        } catch {
+          erroAoExcluirHistorico = true;
+        }
+      }
+
+      let mensagem =
+        erroOperacao instanceof Error
+          ? erroOperacao.message
+          : "Não foi possível concluir a operação.";
+
+      if (erroAoReverter || erroAoExcluirHistorico) {
+        mensagem =
+          "Ocorreu uma falha e não foi possível reverter todas as alterações. Confira o status do Chromebook e o histórico antes de tentar novamente.";
+      }
+
+      setErro(mensagem);
+      salvandoRef.current = false;
       setSalvando(false);
+      return;
     }
+
+    router.push(
+      "/chromebooks/detalhes?id=" +
+        encodeURIComponent(chromebook.id)
+    );
+  }
+
+  if (carregando) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-8 dark:bg-[#3a3a3f]">
+        <p className="text-gray-600 dark:text-gray-300">
+          Carregando Chromebook...
+        </p>
+      </main>
+    );
   }
 
   if (!chromebook) {
@@ -232,18 +479,19 @@ export default function NovaManutencaoPage() {
           <button
             type="button"
             onClick={() => router.push("/chromebooks")}
-            className="text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
+            className="text-sm font-medium text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
           >
             ← Voltar para Chromebooks
           </button>
 
-          <div className="mt-8 rounded-xl bg-white p-8 shadow transition-colors dark:bg-[#444449]">
+          <div className="mt-8 rounded-xl bg-white p-8 shadow dark:bg-[#444449]">
             <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               Chromebook não encontrado
             </h1>
 
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
-              Não foi possível localizar o equipamento informado.
+              {erro ||
+                "Não foi possível localizar o equipamento informado."}
             </p>
           </div>
         </div>
@@ -257,9 +505,12 @@ export default function NovaManutencaoPage() {
         <button
           type="button"
           onClick={() =>
-            router.push("/chromebooks/detalhes?id=" + chromebook.id)
+            router.push(
+              "/chromebooks/detalhes?id=" +
+                encodeURIComponent(chromebook.id)
+            )
           }
-          className="text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
+          className="text-sm font-medium text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
         >
           ← Voltar para {chromebook.id}
         </button>
@@ -274,7 +525,8 @@ export default function NovaManutencaoPage() {
           </h1>
 
           <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Registre uma ocorrência, manutenção, reposição de peça ou envio para reparo.
+            Registre uma ocorrência, manutenção, reposição de peça
+            ou envio para reparo.
           </p>
         </div>
 
@@ -304,6 +556,7 @@ export default function NovaManutencaoPage() {
               <input
                 type="date"
                 value={data}
+                max={obterDataLocal()}
                 onChange={(event) => setData(event.target.value)}
                 required
                 className={classeInput}
@@ -325,14 +578,25 @@ export default function NovaManutencaoPage() {
                   </option>
                 ))}
               </select>
+
+              {tipo === "envio-para-reparo" && (
+                <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+                  Ao salvar, o status mudará para No reparo.
+                  O custo final será registrado no retorno.
+                </p>
+              )}
             </div>
 
             <div>
-              <label className={classeLabel}>Categoria do problema</label>
+              <label className={classeLabel}>
+                Categoria do problema
+              </label>
               <select
                 value={categoria}
                 onChange={(event) =>
-                  setCategoria(event.target.value as CategoriaManutencao)
+                  setCategoria(
+                    event.target.value as CategoriaManutencao
+                  )
                 }
                 className={classeInput}
               >
@@ -352,23 +616,25 @@ export default function NovaManutencaoPage() {
                 rows={4}
                 required
                 placeholder="Descreva o problema ou o serviço realizado..."
-                className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                className={`${classeInput} resize-none`}
               />
             </div>
 
             <div className="md:col-span-2">
               <label className={classeLabel}>
                 Observação
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                <span className="ml-1 font-normal text-gray-400">
                   (opcional)
                 </span>
               </label>
               <textarea
                 value={observacao}
-                onChange={(event) => setObservacao(event.target.value)}
+                onChange={(event) =>
+                  setObservacao(event.target.value)
+                }
                 rows={3}
                 placeholder="Alguma informação adicional..."
-                className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                className={`${classeInput} resize-none`}
               />
             </div>
 
@@ -377,55 +643,82 @@ export default function NovaManutencaoPage() {
               <input
                 type="text"
                 value={quemRealizou}
-                onChange={(event) => setQuemRealizou(event.target.value)}
+                onChange={(event) =>
+                  setQuemRealizou(event.target.value)
+                }
                 required
                 placeholder="Nome do responsável"
                 className={classeInput}
               />
             </div>
 
-            <div>
-              <label className={classeLabel}>
-                Custo do serviço (R$)
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
-                  (opcional)
-                </span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                value={custo}
-                onChange={(event) => setCusto(event.target.value)}
-                placeholder="Ex.: 150,00"
-                className={classeInput}
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Deixe em branco se não houve custo.
-              </p>
-            </div>
+            {tipo !== "envio-para-reparo" && (
+              <div>
+                <label className={classeLabel}>
+                  Custo do serviço (R$)
+                  <span className="ml-1 font-normal text-gray-400">
+                    (opcional)
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={custo}
+                  onChange={(event) => setCusto(event.target.value)}
+                  placeholder="Ex.: 150,00"
+                  className={classeInput}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Para envio externo, o custo real deve ser informado
+                  quando o Chromebook retornar.
+                </p>
+              </div>
+            )}
 
-            <div className="md:col-span-2">
-              <label className={classeLabel}>
-                Destino do reparo
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
-                  (opcional)
-                </span>
-              </label>
-              <input
-                type="text"
-                value={destinoReparo}
-                onChange={(event) => setDestinoReparo(event.target.value)}
-                placeholder="Ex.: Oficina do João, assistência técnica..."
-                className={classeInput}
-              />
-            </div>
+            {tipo === "envio-para-reparo" && (
+              <div>
+                <label className={classeLabel}>
+                  Assistência ou destino do reparo
+                </label>
+                <input
+                  type="text"
+                  value={destinoReparo}
+                  onChange={(event) =>
+                    setDestinoReparo(event.target.value)
+                  }
+                  required
+                  placeholder="Nome da assistência técnica"
+                  className={classeInput}
+                />
+              </div>
+            )}
+
+            {tipo !== "envio-para-reparo" && (
+              <div className="md:col-span-2">
+                <label className={classeLabel}>
+                  Destino do reparo
+                  <span className="ml-1 font-normal text-gray-400">
+                    (opcional)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={destinoReparo}
+                  onChange={(event) =>
+                    setDestinoReparo(event.target.value)
+                  }
+                  placeholder="Ex.: assistência técnica..."
+                  className={classeInput}
+                />
+              </div>
+            )}
 
             <div className="md:col-span-2">
               <label className={classeLabel}>
                 Resultado da manutenção
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                <span className="ml-1 font-normal text-gray-400">
                   (opcional)
                 </span>
               </label>
@@ -433,15 +726,15 @@ export default function NovaManutencaoPage() {
                 value={resultado}
                 onChange={(event) => setResultado(event.target.value)}
                 rows={3}
-                placeholder="Ex.: Tela substituída, equipamento testado e funcionando normalmente..."
-                className="w-full resize-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-black dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-gray-300"
+                placeholder="Descreva o resultado, se já houver..."
+                className={`${classeInput} resize-none`}
               />
             </div>
 
             <div className="md:col-span-2">
               <label className={classeLabel}>
                 Anexos
-                <span className="ml-1 font-normal text-gray-400 dark:text-gray-500">
+                <span className="ml-1 font-normal text-gray-400">
                   (opcional)
                 </span>
               </label>
@@ -451,19 +744,33 @@ export default function NovaManutencaoPage() {
                   id="arquivos"
                   type="file"
                   multiple
+                  disabled={
+                    processandoAnexos ||
+                    salvando ||
+                    anexos.length >= QUANTIDADE_MAXIMA_ANEXOS
+                  }
                   onChange={selecionarArquivos}
                   className="hidden"
                 />
 
                 <label
                   htmlFor="arquivos"
-                  className="inline-flex cursor-pointer rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
+                  className={`inline-flex rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition dark:bg-[#f4f4f5] dark:text-gray-900 ${
+                    processandoAnexos ||
+                    salvando ||
+                    anexos.length >= QUANTIDADE_MAXIMA_ANEXOS
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer hover:bg-gray-800 dark:hover:bg-white"
+                  }`}
                 >
-                  + Adicionar arquivos
+                  {processandoAnexos
+                    ? "Processando arquivos..."
+                    : "+ Adicionar arquivos"}
                 </label>
 
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  Máximo de 5 MB por arquivo.
+                  Até {QUANTIDADE_MAXIMA_ANEXOS} arquivos, com no máximo
+                  5 MB cada. {anexos.length}/{QUANTIDADE_MAXIMA_ANEXOS} anexos adicionados.
                 </p>
 
                 {anexos.length > 0 && (
@@ -484,8 +791,9 @@ export default function NovaManutencaoPage() {
 
                         <button
                           type="button"
+                          disabled={processandoAnexos || salvando}
                           onClick={() => removerAnexo(anexo.id)}
-                          className="ml-4 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-[#553333]"
+                          className="ml-4 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-[#553333]"
                         >
                           Remover
                         </button>
@@ -498,7 +806,10 @@ export default function NovaManutencaoPage() {
           </div>
 
           {erro && (
-            <div className="mx-6 mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-[#3d2929] dark:text-red-300">
+            <div
+              role="alert"
+              className="mx-6 mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-[#3d2929] dark:text-red-300"
+            >
               {erro}
             </div>
           )}
@@ -506,9 +817,12 @@ export default function NovaManutencaoPage() {
           <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-5 dark:border-[#5a5a60]">
             <button
               type="button"
-              disabled={salvando}
+              disabled={salvando || processandoAnexos}
               onClick={() =>
-                router.push("/chromebooks/detalhes?id=" + chromebook.id)
+                router.push(
+                  "/chromebooks/detalhes?id=" +
+                    encodeURIComponent(chromebook.id)
+                )
               }
               className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-[#66666c] dark:bg-[#444449] dark:text-gray-100 dark:hover:bg-[#55555b]"
             >
@@ -517,10 +831,14 @@ export default function NovaManutencaoPage() {
 
             <button
               type="submit"
-              disabled={salvando}
+              disabled={salvando || processandoAnexos}
               className="rounded-lg bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
             >
-              {salvando ? "Salvando..." : "Salvar manutenção"}
+              {salvando
+                ? "Salvando..."
+                : processandoAnexos
+                  ? "Processando anexos..."
+                  : "Salvar manutenção"}
             </button>
           </div>
         </form>

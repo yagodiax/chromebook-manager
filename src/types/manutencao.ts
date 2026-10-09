@@ -1,9 +1,9 @@
-
 export type TipoManutencao =
   | "ocorrencia"
   | "manutencao"
   | "reposicao-de-peca"
-  | "envio-para-reparo";
+  | "envio-para-reparo"
+  | "retorno-de-reparo";
 
 export type CategoriaManutencao =
   | "tela"

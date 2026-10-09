@@ -30,9 +30,28 @@ function nomeTipo(tipo: Manutencao["tipo"]): string {
     manutencao: "Manutenção",
     "reposicao-de-peca": "Reposição de peça",
     "envio-para-reparo": "Envio para reparo",
+    "retorno-de-reparo": "Retorno de reparo",
   };
 
-  return nomes[tipo] ?? tipo;
+  return nomes[tipo];
+}
+
+function obterCustoContabilizavel(
+  manutencao: Manutencao
+): number {
+  // O custo real entra no financeiro no retorno da assistência,
+  // nunca no registro de envio.
+  if (manutencao.tipo === "envio-para-reparo") {
+    return 0;
+  }
+
+  const custo = manutencao.custo;
+
+  return typeof custo === "number" &&
+    Number.isFinite(custo) &&
+    custo >= 0
+    ? custo
+    : 0;
 }
 
 function nomeChromebook(
@@ -64,27 +83,32 @@ function CardIndicador({
   const cores = {
     azul: {
       faixa: "bg-blue-600",
-      icone: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+      icone:
+        "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
       valor: "text-blue-700 dark:text-blue-300",
     },
     verde: {
       faixa: "bg-green-500",
-      icone: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+      icone:
+        "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
       valor: "text-green-700 dark:text-green-300",
     },
     laranja: {
       faixa: "bg-orange-500",
-      icone: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+      icone:
+        "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
       valor: "text-orange-700 dark:text-orange-300",
     },
     vermelho: {
       faixa: "bg-red-500",
-      icone: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+      icone:
+        "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
       valor: "text-red-700 dark:text-red-300",
     },
     roxo: {
       faixa: "bg-violet-500",
-      icone: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+      icone:
+        "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
       valor: "text-violet-700 dark:text-violet-300",
     },
   };
@@ -93,7 +117,9 @@ function CardIndicador({
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md dark:border-[#505057] dark:bg-[#444449]">
-      <div className={`absolute left-0 top-0 h-1 w-full ${estilo.faixa}`} />
+      <div
+        className={`absolute left-0 top-0 h-1 w-full ${estilo.faixa}`}
+      />
 
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -143,19 +169,14 @@ export default function Home() {
     (item) => item.status === "em-reparo"
   ).length;
 
-  const retiradaDePecas = chromebooks.filter(
-    (item) => item.status === "retirada-de-pecas"
+  const paraDescarte = chromebooks.filter(
+    (item) => item.status === "para-descarte"
   ).length;
 
-  const totalGasto = manutencoes.reduce((soma, item) => {
-    const custo = item.custo;
-
-    return typeof custo === "number" &&
-      Number.isFinite(custo) &&
-      custo >= 0
-      ? soma + custo
-      : soma;
-  }, 0);
+  const totalGasto = manutencoes.reduce(
+    (soma, item) => soma + obterCustoContabilizavel(item),
+    0
+  );
 
   const manutencoesRecentes = [...manutencoes]
     .sort((a, b) => b.data.localeCompare(a.data))
@@ -225,9 +246,9 @@ export default function Home() {
             />
 
             <CardIndicador
-              titulo="Em reparo"
+              titulo="No reparo"
               valor={emReparo}
-              descricao="Precisam de acompanhamento"
+              descricao="Aguardando retorno da assistência"
               cor="laranja"
               simbolo="⚙"
             />
@@ -246,7 +267,7 @@ export default function Home() {
             <CardIndicador
               titulo="Gastos acumulados"
               valor={formatarMoeda(totalGasto)}
-              descricao="Soma dos custos registrados"
+              descricao="Custos finais contabilizáveis"
               cor="azul"
               simbolo="R$"
             />
@@ -260,9 +281,9 @@ export default function Home() {
             />
 
             <CardIndicador
-              titulo="Retirada de peças"
-              valor={retiradaDePecas}
-              descricao="Equipamentos nessa condição"
+              titulo="Para descarte"
+              valor={paraDescarte}
+              descricao="Equipamentos separados para descarte"
               cor="vermelho"
               simbolo="!"
             />
@@ -313,48 +334,68 @@ export default function Home() {
               </div>
             ) : (
               <div className="mt-5 divide-y divide-gray-100 dark:divide-[#56565d]">
-                {manutencoesRecentes.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col justify-between gap-3 py-4 sm:flex-row sm:items-center"
-                  >
-                    <div className="flex min-w-0 gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                        TI
+                {manutencoesRecentes.map((item) => {
+                  const custoContabilizavel =
+                    obterCustoContabilizavel(item);
+
+                  const temCustoInformado =
+                    typeof item.custo === "number" &&
+                    Number.isFinite(item.custo) &&
+                    item.custo >= 0;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col justify-between gap-3 py-4 sm:flex-row sm:items-center"
+                    >
+                      <div className="flex min-w-0 gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                          TI
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {nomeChromebook(
+                              item.chromebookId,
+                              chromebooks
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                            {nomeTipo(item.tipo)}
+                          </p>
+
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {formatarData(item.data)} · {item.id}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {nomeChromebook(item.chromebookId, chromebooks)}
-                        </p>
+                      <div className="shrink-0 sm:text-right">
+                        {item.tipo === "envio-para-reparo" ? (
+                          <p className="font-semibold text-gray-500 dark:text-gray-400">
+                            Sem custo contabilizado
+                          </p>
+                        ) : temCustoInformado ? (
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {formatarMoeda(custoContabilizavel)}
+                          </p>
+                        ) : (
+                          <p className="font-semibold text-gray-500 dark:text-gray-400">
+                            Sem custo informado
+                          </p>
+                        )}
 
-                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                          {nomeTipo(item.tipo)}
-                        </p>
-
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {formatarData(item.data)} · {item.id}
-                        </p>
+                        <Link
+                          href={`/chromebooks/manutencao/editar?id=${encodeURIComponent(item.id)}`}
+                          className="mt-1 inline-block text-xs font-medium text-blue-700 hover:underline dark:text-blue-300"
+                        >
+                          Abrir registro
+                        </Link>
                       </div>
                     </div>
-
-                    <div className="shrink-0 sm:text-right">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
-                        {typeof item.custo === "number" &&
-                        Number.isFinite(item.custo)
-                          ? formatarMoeda(item.custo)
-                          : "Sem custo informado"}
-                      </p>
-
-                      <Link
-                        href={`/chromebooks/manutencao/editar?id=${encodeURIComponent(item.id)}`}
-                        className="mt-1 inline-block text-xs font-medium text-blue-700 hover:underline dark:text-blue-300"
-                      >
-                        Abrir registro
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -442,7 +483,7 @@ export default function Home() {
               </p>
 
               <p className="mt-1 text-xs leading-5 text-blue-800 dark:text-blue-300">
-                Acompanhe os status e mantenha o histórico de manutenção
+                Acompanhe as situações e mantenha o histórico de manutenção
                 atualizado para facilitar a gestão de TI.
               </p>
             </div>
