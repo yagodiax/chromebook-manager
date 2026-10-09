@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getChromebooks } from "@/lib/chromebooks";
 import {
@@ -104,11 +103,10 @@ function dataValida(valor: string): boolean {
   );
 }
 
-export default function EditarManutencaoPage() {
+function EditarManutencaoConteudo() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // O ref impede salvamentos duplicados antes mesmo da atualização do estado.
   const salvamentoEmAndamento = useRef(false);
   const selecaoDeArquivosEmAndamento = useRef(false);
 
@@ -137,7 +135,8 @@ export default function EditarManutencaoPage() {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
-  const [adicionandoAnexos, setAdicionandoAnexos] = useState(false);
+  const [adicionandoAnexos, setAdicionandoAnexos] =
+    useState(false);
 
   useEffect(() => {
     try {
@@ -201,14 +200,13 @@ export default function EditarManutencaoPage() {
     setErro("");
 
     const arquivos = Array.from(event.target.files ?? []);
-    let quantidadeAtual = anexos.length;
     const novosAnexos: AnexoManutencao[] = [];
     const errosArquivos: string[] = [];
 
     try {
       for (const arquivo of arquivos) {
         if (
-          quantidadeAtual + novosAnexos.length >=
+          anexos.length + novosAnexos.length >=
           QUANTIDADE_MAXIMA_ANEXOS
         ) {
           errosArquivos.push(
@@ -245,7 +243,10 @@ export default function EditarManutencaoPage() {
       }
 
       if (novosAnexos.length > 0) {
-        setAnexos((atuais) => [...atuais, ...novosAnexos]);
+        setAnexos((atuais) => [
+          ...atuais,
+          ...novosAnexos,
+        ]);
       }
 
       if (errosArquivos.length > 0) {
@@ -269,6 +270,7 @@ export default function EditarManutencaoPage() {
     if (
       salvamentoEmAndamento.current ||
       salvando ||
+      adicionandoAnexos ||
       !manutencao
     ) {
       return;
@@ -278,6 +280,20 @@ export default function EditarManutencaoPage() {
 
     if (!dataValida(data)) {
       setErro("Informe uma data válida.");
+      return;
+    }
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    const dataInformada = new Date(
+      Number(data.slice(0, 4)),
+      Number(data.slice(5, 7)) - 1,
+      Number(data.slice(8, 10))
+    );
+
+    if (dataInformada > hoje) {
+      setErro("A data da manutenção não pode ser futura.");
       return;
     }
 
@@ -324,7 +340,6 @@ export default function EditarManutencaoPage() {
 
     let custoNumerico: number | undefined;
 
-    // O envio para reparo não deve contabilizar custo no relatório.
     if (tipo !== "envio-para-reparo" && custo.trim() !== "") {
       custoNumerico = Number(custo.replace(",", "."));
 
@@ -338,8 +353,8 @@ export default function EditarManutencaoPage() {
         return;
       }
 
-      // Mantém o valor monetário com precisão de centavos.
-      custoNumerico = Math.round(custoNumerico * 100) / 100;
+      custoNumerico =
+        Math.round(custoNumerico * 100) / 100;
     }
 
     salvamentoEmAndamento.current = true;
@@ -498,7 +513,9 @@ export default function EditarManutencaoPage() {
               <input
                 type="date"
                 value={data}
-                onChange={(event) => setData(event.target.value)}
+                onChange={(event) =>
+                  setData(event.target.value)
+                }
                 required
                 className={classeInput}
               />
@@ -554,7 +571,9 @@ export default function EditarManutencaoPage() {
 
               <textarea
                 value={descricao}
-                onChange={(event) => setDescricao(event.target.value)}
+                onChange={(event) =>
+                  setDescricao(event.target.value)
+                }
                 rows={4}
                 required
                 className={classeInput + " resize-none"}
@@ -571,7 +590,9 @@ export default function EditarManutencaoPage() {
 
               <textarea
                 value={observacao}
-                onChange={(event) => setObservacao(event.target.value)}
+                onChange={(event) =>
+                  setObservacao(event.target.value)
+                }
                 rows={3}
                 className={classeInput + " resize-none"}
               />
@@ -617,7 +638,9 @@ export default function EditarManutencaoPage() {
                   step="0.01"
                   inputMode="decimal"
                   value={custo}
-                  onChange={(event) => setCusto(event.target.value)}
+                  onChange={(event) =>
+                    setCusto(event.target.value)
+                  }
                   placeholder="Ex.: 150.00"
                   className={classeInput}
                 />
@@ -659,7 +682,9 @@ export default function EditarManutencaoPage() {
 
               <textarea
                 value={resultado}
-                onChange={(event) => setResultado(event.target.value)}
+                onChange={(event) =>
+                  setResultado(event.target.value)
+                }
                 rows={3}
                 placeholder="Ex.: tela substituída e equipamento testado."
                 className={classeInput + " resize-none"}
@@ -776,5 +801,21 @@ export default function EditarManutencaoPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function EditarManutencaoPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gray-100 p-8 dark:bg-[#3a3a3f]">
+          <p className="text-gray-600 dark:text-gray-300">
+            Carregando manutenção...
+          </p>
+        </main>
+      }
+    >
+      <EditarManutencaoConteudo />
+    </Suspense>
   );
 }
