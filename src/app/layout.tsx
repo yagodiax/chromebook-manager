@@ -1,4 +1,6 @@
+
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
@@ -31,15 +33,25 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <div className="min-h-screen">
-          <Sidebar />
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-gray-100 p-8 dark:bg-[#3a3a3f]">
+              <p className="text-gray-600 dark:text-gray-300">
+                Carregando Chromebook Manager...
+              </p>
+            </div>
+          }
+        >
+          <div className="min-h-screen">
+            <Sidebar />
 
-          <ThemeToggle />
+            <ThemeToggle />
 
-          <main className="min-h-screen pl-60">
-            {children}
-          </main>
-        </div>
+            <main className="min-h-screen pl-60">
+              {children}
+            </main>
+          </div>
+        </Suspense>
       </body>
     </html>
   );
