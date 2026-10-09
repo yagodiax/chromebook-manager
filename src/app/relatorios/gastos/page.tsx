@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getChromebooks } from "@/lib/chromebooks";
 import { getManutencoes } from "@/lib/manutencoes";
 import type { Chromebook } from "@/types/chromebook";
@@ -120,6 +121,8 @@ const selectBase =
   "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200 dark:border-[#5a5a60] dark:bg-[#303034] dark:text-gray-100 dark:focus:ring-[#505057]";
 
 export default function RelatorioGastosPage() {
+  const router = useRouter();
+
   const [chromebooks, setChromebooks] = useState<Chromebook[]>([]);
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
   const [periodo, setPeriodo] = useState<Periodo>("30-dias");
@@ -341,8 +344,22 @@ export default function RelatorioGastosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-5 transition-colors sm:p-8 dark:bg-[#3a3a3f]">
-      <div className="mx-auto max-w-[1500px] space-y-6">
+        <div className="min-h-screen bg-slate-50 p-5 transition-colors sm:p-8 dark:bg-[#303035]">
+        <div className="mx-auto max-w-[1500px] space-y-6">
+        {/* Navegação — mesmo padrão da aba Chromebooks */}
+        <div>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <span className="transition-transform group-hover:-translate-x-1">
+              ←
+            </span>
+            Voltar ao Dashboard
+          </button>
+        </div>
+
         <header className="flex flex-col justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:p-8 dark:border-[#505057] dark:bg-[#444449]">
           <div>
             <div className="mb-3 flex items-center gap-2">

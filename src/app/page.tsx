@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -39,7 +40,7 @@ function nomeTipo(tipo: Manutencao["tipo"]): string {
 function obterCustoContabilizavel(
   manutencao: Manutencao
 ): number {
-  // O custo real entra no financeiro no retorno da assistência,
+  // O custo do reparo é contabilizado no retorno da assistência,
   // nunca no registro de envio.
   if (manutencao.tipo === "envio-para-reparo") {
     return 0;
@@ -122,12 +123,12 @@ function CardIndicador({
       />
 
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
             {titulo}
           </p>
 
-          <p className={`mt-3 text-3xl font-bold ${estilo.valor}`}>
+          <p className={`mt-3 break-words text-3xl font-bold ${estilo.valor}`}>
             {valor}
           </p>
         </div>
@@ -149,6 +150,10 @@ function CardIndicador({
 export default function Home() {
   const [chromebooks, setChromebooks] = useState<Chromebook[]>([]);
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
+
+  const anoAtual = new Date().getFullYear();
+
+  const [anoSelecionado, setAnoSelecionado] = useState(anoAtual);
 
   useEffect(() => {
     setChromebooks(getChromebooks());
@@ -178,6 +183,69 @@ export default function Home() {
     0
   );
 
+  // Disponibiliza o ano atual e os anos que possuem registros.
+  const anosDisponiveis = Array.from(
+    new Set([
+      anoAtual,
+      ...manutencoes
+        .map((item) => Number(item.data?.slice(0, 4)))
+        .filter((ano) => Number.isInteger(ano) && ano > 0),
+    ])
+  ).sort((a, b) => b - a);
+
+  // Filtra os registros pelo ano selecionado.
+  const manutencoesDoAno = manutencoes.filter(
+    (item) => item.data?.slice(0, 4) === String(anoSelecionado)
+  );
+
+  const gastosDoAno = manutencoesDoAno.reduce(
+    (soma, item) => soma + obterCustoContabilizavel(item),
+    0
+  );
+
+  // Considera somente registros que realmente possuem custo numérico.
+  const registrosComCusto = manutencoesDoAno.filter(
+    (item) =>
+      item.tipo !== "envio-para-reparo" &&
+      typeof item.custo === "number" &&
+      Number.isFinite(item.custo) &&
+      item.custo >= 0
+  );
+
+  const custoMedioDoAno =
+    registrosComCusto.length > 0
+      ? gastosDoAno / registrosComCusto.length
+      : 0;
+
+  // Agrupa os custos contabilizáveis por mês.
+  const gastosPorMes = Array.from({ length: 12 }, (_, indice) => {
+    const mes = String(indice + 1).padStart(2, "0");
+
+    const totalMes = manutencoesDoAno.reduce((soma, item) => {
+      if (
+        item.data?.slice(5, 7) !== mes ||
+        item.tipo === "envio-para-reparo"
+      ) {
+        return soma;
+      }
+
+      return soma + obterCustoContabilizavel(item);
+    }, 0);
+
+    return {
+      numero: mes,
+      nome: new Date(2000, indice, 1).toLocaleDateString("pt-BR", {
+        month: "short",
+      }),
+      total: totalMes,
+    };
+  });
+
+  const maiorGastoMensal = Math.max(
+    1,
+    ...gastosPorMes.map((mes) => mes.total)
+  );
+
   const manutencoesRecentes = [...manutencoes]
     .sort((a, b) => b.data.localeCompare(a.data))
     .slice(0, 5);
@@ -185,6 +253,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50 p-5 transition-colors sm:p-8 dark:bg-[#303036]">
       <div className="mx-auto max-w-7xl">
+        {/* Cabeçalho */}
         <header className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-2 flex items-center gap-2">
@@ -212,6 +281,7 @@ export default function Home() {
           </Link>
         </header>
 
+        {/* Visão geral dos equipamentos */}
         <section>
           <div className="mb-4 flex items-center gap-2">
             <span className="h-5 w-1 rounded-full bg-blue-600" />
@@ -255,11 +325,12 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Resumo geral de manutenção e custos */}
         <section className="mt-8">
           <div className="mb-4 flex items-center gap-2">
             <span className="h-5 w-1 rounded-full bg-violet-600" />
             <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-              Manutenção e custos
+              Manutenção e custos — visão geral
             </h2>
           </div>
 
@@ -267,7 +338,7 @@ export default function Home() {
             <CardIndicador
               titulo="Gastos acumulados"
               valor={formatarMoeda(totalGasto)}
-              descricao="Custos finais contabilizáveis"
+              descricao="Custos finais contabilizáveis de todos os anos"
               cor="azul"
               simbolo="R$"
             />
@@ -290,6 +361,239 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Relatório anual */}
+        <section className="mt-8 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-colors sm:p-6 dark:border-[#505057] dark:bg-[#444449]">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="h-5 w-1 rounded-full bg-violet-600" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Relatório anual
+                </h2>
+              </div>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Histórico de manutenções e custos por exercício.
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="ano-relatorio"
+                className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
+                Ano do relatório
+              </label>
+
+              <select
+                id="ano-relatorio"
+                value={anoSelecionado}
+                onChange={(event) =>
+                  setAnoSelecionado(Number(event.target.value))
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 sm:w-44"
+              >
+                {anosDisponiveis.map((ano) => (
+                  <option key={ano} value={ano}>
+                    {ano}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Indicadores do ano */}
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <CardIndicador
+              titulo={`Total gasto em ${anoSelecionado}`}
+              valor={formatarMoeda(gastosDoAno)}
+              descricao="Custos contabilizáveis do ano selecionado"
+              cor="azul"
+              simbolo="R$"
+            />
+
+            <CardIndicador
+              titulo="Registros no ano"
+              valor={manutencoesDoAno.length}
+              descricao="Manutenções registradas nesse período"
+              cor="roxo"
+              simbolo="≡"
+            />
+
+            <CardIndicador
+              titulo="Custo médio por registro com custo"
+              valor={formatarMoeda(custoMedioDoAno)}
+              descricao={`${registrosComCusto.length} registro(s) com custo informado, exceto envio para reparo`}
+              cor="verde"
+              simbolo="÷"
+            />
+          </div>
+
+          {/* Gráfico mensal */}
+          <div className="mt-8">
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Gastos por mês — {anoSelecionado}
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Distribuição dos custos contabilizáveis ao longo do ano.
+              </p>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {gastosPorMes.map((mes) => {
+                const largura =
+                  mes.total > 0
+                    ? Math.max(
+                        2,
+                        (mes.total / maiorGastoMensal) * 100
+                      )
+                    : 0;
+
+                return (
+                  <div key={mes.numero}>
+                    <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
+                      <span className="w-12 shrink-0 capitalize text-gray-600 dark:text-gray-300">
+                        {mes.nome.replace(".", "")}
+                      </span>
+
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-[#303034]">
+                        <div
+                          className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                          style={{ width: `${largura}%` }}
+                        />
+                      </div>
+
+                      <span className="w-32 shrink-0 text-right text-xs font-semibold text-gray-900 sm:text-sm dark:text-gray-100">
+                        {formatarMoeda(mes.total)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Detalhamento do ano */}
+          <div className="mt-8">
+            <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Registros de {anoSelecionado}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Consulte os registros incluídos no período selecionado.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-[#303034] dark:text-gray-300">
+                {manutencoesDoAno.length} registro(s)
+              </span>
+            </div>
+
+            {manutencoesDoAno.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center dark:border-[#606068]">
+                <p className="font-semibold text-gray-800 dark:text-gray-100">
+                  Nenhuma manutenção neste ano
+                </p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Quando houver registros com datas de {anoSelecionado},
+                  eles aparecerão aqui.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-[#606068]">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 dark:bg-[#38383e]">
+                    <tr>
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Data
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Equipamento
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Tipo
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Custo
+                      </th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Ação
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-100 dark:divide-[#55555d]">
+                    {[...manutencoesDoAno]
+                      .sort((a, b) => b.data.localeCompare(a.data))
+                      .map((item) => {
+                        const custoInformado =
+                          typeof item.custo === "number" &&
+                          Number.isFinite(item.custo) &&
+                          item.custo >= 0;
+
+                        return (
+                          <tr
+                            key={item.id}
+                            className="transition hover:bg-gray-50 dark:hover:bg-[#4b4b52]"
+                          >
+                            <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                              {formatarData(item.data)}
+                            </td>
+
+                            <td className="min-w-48 px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {nomeChromebook(
+                                item.chromebookId,
+                                chromebooks
+                              )}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                              {nomeTipo(item.tipo)}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {item.tipo === "envio-para-reparo"
+                                ? "Não contabilizado"
+                                : custoInformado
+                                  ? formatarMoeda(
+                                      obterCustoContabilizavel(item)
+                                    )
+                                  : "Não informado"}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3 text-right">
+                              <Link
+                                href={`/chromebooks/manutencao/editar?id=${encodeURIComponent(item.id)}`}
+                                className="text-sm font-semibold text-blue-700 hover:underline dark:text-blue-300"
+                              >
+                                Abrir
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 border-t border-gray-200 pt-4 dark:border-[#606066]">
+            <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
+              O relatório utiliza a data de cada registro para definir o ano
+              e o mês. Envios para reparo não são contabilizados como custo,
+              evitando somar o envio e o retorno do mesmo serviço. Registros
+              sem custo informado aparecem no histórico, mas não acrescentam
+              valor ao total. O custo médio considera apenas registros com
+              custo numérico informado, exceto envios para reparo.
+            </p>
+          </div>
+        </section>
+
+        {/* Manutenções recentes e acessos rápidos */}
         <section className="mt-8 grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-[#505057] dark:bg-[#444449] sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -400,6 +704,7 @@ export default function Home() {
             )}
           </div>
 
+          {/* Acesso rápido */}
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-[#505057] dark:bg-[#444449] sm:p-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               Acesso rápido
