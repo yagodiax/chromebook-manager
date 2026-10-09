@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -32,7 +33,7 @@ export default function Sidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 px-3 py-5">
+      <nav className="flex-1 overflow-y-auto px-3 py-5">
         <div className="space-y-1">
           <Link
             href="/"
@@ -93,6 +94,12 @@ export default function Sidebar() {
         </div>
       </nav>
 
+      {/* Botão de tema dentro da sidebar */}
+      <div className="px-3 pb-3">
+        <ThemeToggle />
+      </div>
+
+      {/* Área do administrador e botão Sair */}
       <div className="border-t border-gray-300 p-4 dark:border-[#3d3d42]">
         <div className="mb-3 rounded-lg bg-gray-200 px-4 py-3 dark:bg-[#3d3d42]">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">

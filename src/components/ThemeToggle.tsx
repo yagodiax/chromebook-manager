@@ -7,39 +7,22 @@ export default function ThemeToggle() {
   const [carregado, setCarregado] = useState(false);
 
   useEffect(() => {
-    const temaSalvo = localStorage.getItem(
-      "chromebook-theme"
-    );
+    const temaSalvo = localStorage.getItem("chromebook-theme");
+    const temaEscuro = temaSalvo === "dark";
 
-    if (temaSalvo === "dark") {
-      document.documentElement.classList.add("dark");
-      setDark(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setDark(false);
-    }
-
+    document.documentElement.classList.toggle("dark", temaEscuro);
+    setDark(temaEscuro);
     setCarregado(true);
   }, []);
 
   function alternarTema() {
     const novoTema = !dark;
 
-    if (novoTema) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem(
-        "chromebook-theme",
-        "dark"
-      );
-    } else {
-      document.documentElement.classList.remove(
-        "dark"
-      );
-      localStorage.setItem(
-        "chromebook-theme",
-        "light"
-      );
-    }
+    document.documentElement.classList.toggle("dark", novoTema);
+    localStorage.setItem(
+      "chromebook-theme",
+      novoTema ? "dark" : "light"
+    );
 
     setDark(novoTema);
   }
@@ -52,41 +35,14 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={alternarTema}
-      className="
-        fixed
-        right-6
-        top-6
-        z-50
-        flex
-        h-11
-        w-11
-        items-center
-        justify-center
-        rounded-xl
-        border
-        border-gray-200
-        bg-white
-        text-gray-700
-        shadow-sm
-        transition
-        hover:bg-gray-100
-        dark:border-[#5a5a60]
-        dark:bg-[#444449]
-        dark:text-gray-100
-        dark:hover:bg-[#505057]
-      "
-      title={
-        dark
-          ? "Ativar modo claro"
-          : "Ativar modo escuro"
-      }
-      aria-label={
-        dark
-          ? "Ativar modo claro"
-          : "Ativar modo escuro"
-      }
+      className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+      title={dark ? "Ativar modo claro" : "Ativar modo escuro"}
+      aria-label={dark ? "Ativar modo claro" : "Ativar modo escuro"}
     >
-      {dark ? "☀️" : "🌙"}
+      <span>{dark ? "Modo claro" : "Modo escuro"}</span>
+      <span className="text-lg" aria-hidden="true">
+        {dark ? "☀️" : "🌙"}
+      </span>
     </button>
   );
 }
