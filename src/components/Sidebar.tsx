@@ -1,11 +1,46 @@
+
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const [nome, setNome] = useState("Administrador");
+  const [saindo, setSaindo] = useState(false);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function carregarUsuario() {
+      try {
+        const resposta = await fetch("/api/auth/me", {
+          cache: "no-store",
+        });
+
+        if (!resposta.ok) return;
+
+        const dados = await resposta.json();
+
+        if (!cancelado && dados.usuario?.nome) {
+          setNome(dados.usuario.nome);
+        }
+      } catch {
+        // A verificação principal da sessão é feita pelo AuthGuard.
+      }
+    }
+
+    carregarUsuario();
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   const dashboardAtivo = pathname === "/";
 
@@ -21,13 +56,36 @@ export default function Sidebar() {
     pathname === "/usuarios" ||
     pathname.startsWith("/usuarios/");
 
+  async function sair() {
+    setErro("");
+    setSaindo(true);
+
+    try {
+      const resposta = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      if (!resposta.ok) {
+        setErro("Não foi possível sair. Tente novamente.");
+        setSaindo(false);
+        return;
+      }
+
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setErro("Erro de conexão ao tentar sair.");
+      setSaindo(false);
+    }
+  }
+
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-gray-300 bg-gray-100 text-gray-900 transition-colors dark:border-[#3d3d42] dark:bg-[#29292d] dark:text-gray-100">
       <div className="border-b border-gray-300 px-6 py-6 dark:border-[#3d3d42]">
         <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
           Chromebook Manager
         </h1>
-
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Sistema de gerenciamento
         </p>
@@ -94,28 +152,33 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      {/* Botão de tema dentro da sidebar */}
       <div className="px-3 pb-3">
         <ThemeToggle />
       </div>
 
-      {/* Área do administrador e botão Sair */}
       <div className="border-t border-gray-300 p-4 dark:border-[#3d3d42]">
         <div className="mb-3 rounded-lg bg-gray-200 px-4 py-3 dark:bg-[#3d3d42]">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Administrador
+          <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {nome}
           </p>
-
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Administrador
           </p>
         </div>
 
+        {erro && (
+          <p className="mb-2 text-xs text-red-600 dark:text-red-300">
+            {erro}
+          </p>
+        )}
+
         <button
           type="button"
-          className="w-full rounded-lg px-4 py-2.5 text-left text-sm text-gray-600 transition hover:bg-gray-300 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          onClick={sair}
+          disabled={saindo}
+          className="w-full rounded-lg px-4 py-2.5 text-left text-sm text-gray-600 transition hover:bg-gray-300 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
         >
-          Sair
+          {saindo ? "Saindo..." : "Sair"}
         </button>
       </div>
     </aside>

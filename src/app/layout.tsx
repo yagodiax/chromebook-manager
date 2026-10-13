@@ -1,8 +1,9 @@
+
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import AuthGuard from "@/components/AuthGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,13 +41,7 @@ export default function RootLayout({
             </div>
           }
         >
-          <div className="min-h-screen">
-            <Sidebar />
-
-            <main className="min-h-screen pl-60">
-              {children}
-            </main>
-          </div>
+          <AuthGuard>{children}</AuthGuard>
         </Suspense>
       </body>
     </html>
