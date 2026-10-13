@@ -86,19 +86,32 @@ export default function RetornoReparoPage() {
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
-    const id = searchParams.get("chromebook");
+    let cancelado = false;
 
-    if (!id) {
-      setCarregando(false);
-      return;
-    }
+    async function carregarChromebook() {
+      const id = searchParams.get("chromebook");
 
-    try {
-      const encontrado = getChromebooks().find(
-        (item) => item.id === id
-      );
+      if (!id) {
+        setErro("Não foi informado o Chromebook para o retorno.");
+        setCarregando(false);
+        return;
+      }
 
-      if (encontrado) {
+      try {
+        const chromebooks = await getChromebooks();
+
+        if (cancelado) return;
+
+        const encontrado = chromebooks.find(
+          (item) => item.id === id
+        );
+
+        if (!encontrado) {
+          setChromebook(null);
+          setErro("Não foi possível localizar o Chromebook.");
+          return;
+        }
+
         setChromebook(encontrado);
 
         setStatusFinal(
@@ -106,15 +119,27 @@ export default function RetornoReparoPage() {
             ? "disponivel"
             : "em-uso"
         );
-      }
 
-      setData(obterDataLocal());
-    } catch {
-      setChromebook(null);
-      setErro("Não foi possível carregar os dados do Chromebook.");
-    } finally {
-      setCarregando(false);
+        setData(obterDataLocal());
+      } catch {
+        if (!cancelado) {
+          setChromebook(null);
+          setErro(
+            "Não foi possível carregar os dados do Chromebook. Verifique a conexão com o banco de dados."
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCarregando(false);
+        }
+      }
     }
+
+    void carregarChromebook();
+
+    return () => {
+      cancelado = true;
+    };
   }, [searchParams]);
 
   function voltarParaDetalhes() {
@@ -129,36 +154,13 @@ export default function RetornoReparoPage() {
     router.push("/chromebooks");
   }
 
-  function salvarRetorno() {
+  async function salvarRetorno() {
     if (salvandoRef.current) return;
 
     setErro("");
 
     if (!chromebook) {
       setErro("Não foi possível identificar o Chromebook.");
-      return;
-    }
-
-    let equipamentoAtual: Chromebook | undefined;
-
-    try {
-      equipamentoAtual = getChromebooks().find(
-        (item) => item.id === chromebook.id
-      );
-    } catch {
-      setErro("Não foi possível consultar o equipamento salvo.");
-      return;
-    }
-
-    if (!equipamentoAtual) {
-      setErro("O Chromebook não foi encontrado no armazenamento.");
-      return;
-    }
-
-    if (equipamentoAtual.status !== "em-reparo") {
-      setErro(
-        "Este Chromebook não está marcado como 'No reparo'. Atualize a página e confira a situação do equipamento."
-      );
       return;
     }
 
@@ -211,15 +213,36 @@ export default function RetornoReparoPage() {
     salvandoRef.current = true;
     setSalvando(true);
 
+    let equipamentoAtual: Chromebook | undefined;
     let registroCriadoId: string | null = null;
     let atualizacaoDeStatusTentada = false;
 
     try {
+      const chromebooks = await getChromebooks();
+
+      equipamentoAtual = chromebooks.find(
+        (item) => item.id === chromebook.id
+      );
+
+      if (!equipamentoAtual) {
+        setErro(
+          "O Chromebook não foi encontrado no banco de dados."
+        );
+        return;
+      }
+
+      if (equipamentoAtual.status !== "em-reparo") {
+        setErro(
+          "Este Chromebook não está marcado como 'No reparo'. Atualize a página e confira a situação do equipamento."
+        );
+        return;
+      }
+
       const descricaoCompleta = pecaSubstituida.trim()
         ? `${descricao.trim()}\nPeça substituída: ${pecaSubstituida.trim()}`
         : descricao.trim();
 
-      const registro = saveManutencao({
+      const registro = await saveManutencao({
         chromebookId: equipamentoAtual.id,
         data,
         tipo: "retorno-de-reparo",
@@ -235,20 +258,23 @@ export default function RetornoReparoPage() {
 
       registroCriadoId = registro.id;
 
-      // Marca a tentativa antes da atualização para permitir
-      // uma tentativa de reversão mesmo se a chamada falhar.
       atualizacaoDeStatusTentada = true;
 
-      updateChromebook({
+      await updateChromebook({
         ...equipamentoAtual,
         status: statusFinal,
       });
+
+      router.push(
+        "/chromebooks/detalhes?id=" +
+          encodeURIComponent(equipamentoAtual.id)
+      );
     } catch {
       let falhouAoReverter = false;
 
-      if (atualizacaoDeStatusTentada) {
+      if (atualizacaoDeStatusTentada && equipamentoAtual) {
         try {
-          updateChromebook(equipamentoAtual);
+          await updateChromebook(equipamentoAtual);
         } catch {
           falhouAoReverter = true;
         }
@@ -256,7 +282,7 @@ export default function RetornoReparoPage() {
 
       if (registroCriadoId) {
         try {
-          deleteManutencao(registroCriadoId);
+          await deleteManutencao(registroCriadoId);
         } catch {
           falhouAoReverter = true;
         }
@@ -265,18 +291,12 @@ export default function RetornoReparoPage() {
       setErro(
         falhouAoReverter
           ? "Ocorreu uma falha e não foi possível reverter todas as alterações. Confira o histórico e a situação do Chromebook antes de tentar novamente."
-          : "Não foi possível concluir o registro. Confira o histórico e a situação do Chromebook antes de tentar novamente."
+          : "Não foi possível concluir o registro do retorno. Verifique a conexão com o banco de dados e tente novamente."
       );
-
+    } finally {
       salvandoRef.current = false;
       setSalvando(false);
-      return;
     }
-
-    router.push(
-      "/chromebooks/detalhes?id=" +
-        encodeURIComponent(equipamentoAtual.id)
-    );
   }
 
   if (carregando) {
@@ -406,7 +426,9 @@ export default function RetornoReparoPage() {
               <input
                 type="text"
                 value={assistencia}
-                onChange={(event) => setAssistencia(event.target.value)}
+                onChange={(event) =>
+                  setAssistencia(event.target.value)
+                }
                 placeholder="Nome da assistência ou responsável"
                 required
                 className={classeInput}
@@ -442,7 +464,9 @@ export default function RetornoReparoPage() {
 
               <textarea
                 value={descricao}
-                onChange={(event) => setDescricao(event.target.value)}
+                onChange={(event) =>
+                  setDescricao(event.target.value)
+                }
                 rows={3}
                 required
                 placeholder="Ex.: substituição da tela e revisão das conexões."
@@ -501,7 +525,9 @@ export default function RetornoReparoPage() {
 
               <textarea
                 value={resultado}
-                onChange={(event) => setResultado(event.target.value)}
+                onChange={(event) =>
+                  setResultado(event.target.value)
+                }
                 rows={3}
                 required
                 placeholder="Ex.: equipamento ligado, Wi-Fi conectado e teclado testado."

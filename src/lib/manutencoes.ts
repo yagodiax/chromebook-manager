@@ -1,311 +1,220 @@
 
 import type { Manutencao } from "@/types/manutencao";
 
-const STORAGE_KEY = "chromebook-manager-manutencoes";
-const MAX_MANUTENCOES = 999999;
+const API_URL = "/api/manutencoes";
 
 export type NovaManutencao = Omit<Manutencao, "id">;
 
-function gerarProximoId(
-  manutencoes: Manutencao[]
-): string {
-  const numeros = manutencoes
-    .map((manutencao) => {
-      const id = manutencao.id;
+async function requisicaoAPI(
+  url: string,
+  opcoes?: RequestInit
+): Promise<unknown> {
+  let resposta: Response;
 
-      if (typeof id !== "string" || !id.startsWith("MAN-")) {
-        return 0;
-      }
-
-      const numero = Number(id.slice(4));
-
-      return Number.isSafeInteger(numero) && numero > 0
-        ? numero
-        : 0;
+  try {
+    resposta = await fetch(url, {
+      ...opcoes,
+      headers: {
+        "Content-Type": "application/json",
+        ...opcoes?.headers,
+      },
+      cache: "no-store",
     });
-
-  const maiorId =
-    numeros.length > 0 ? Math.max(...numeros) : 0;
-
-  const proximoId = maiorId + 1;
-
-  if (proximoId > MAX_MANUTENCOES) {
-    throw new Error(
-      "O limite de registros de manutenção foi atingido."
-    );
-  }
-
-  return `MAN-${String(proximoId).padStart(6, "0")}`;
-}
-
-function validarLista(
-  valor: unknown
-): valor is Manutencao[] {
-  if (!Array.isArray(valor)) {
-    return false;
-  }
-
-  const ids = new Set<string>();
-
-  for (const item of valor) {
-    if (
-      item === null ||
-      typeof item !== "object" ||
-      Array.isArray(item)
-    ) {
-      return false;
-    }
-
-    const registro = item as Record<string, unknown>;
-
-    if (
-      typeof registro.id !== "string" ||
-      registro.id.trim() === "" ||
-      typeof registro.chromebookId !== "string" ||
-      registro.chromebookId.trim() === "" ||
-      typeof registro.data !== "string" ||
-      typeof registro.tipo !== "string" ||
-      typeof registro.categoria !== "string" ||
-      typeof registro.descricao !== "string" ||
-      typeof registro.observacao !== "string" ||
-      typeof registro.quemRealizou !== "string" ||
-      !Array.isArray(registro.anexos)
-    ) {
-      return false;
-    }
-
-    if (ids.has(registro.id)) {
-      return false;
-    }
-
-    ids.add(registro.id);
-
-    // Campos opcionais precisam ser válidos quando presentes.
-    if (
-      registro.custo !== undefined &&
-      (
-        typeof registro.custo !== "number" ||
-        !Number.isFinite(registro.custo) ||
-        registro.custo < 0
-      )
-    ) {
-      return false;
-    }
-
-    if (
-      registro.destinoReparo !== undefined &&
-      typeof registro.destinoReparo !== "string"
-    ) {
-      return false;
-    }
-
-    if (
-      registro.resultado !== undefined &&
-      typeof registro.resultado !== "string"
-    ) {
-      return false;
-    }
-
-    // Verifica a estrutura dos anexos sem impor um formato
-    // de conteúdo que possa invalidar arquivos antigos.
-    for (const anexo of registro.anexos) {
-      if (
-        anexo === null ||
-        typeof anexo !== "object" ||
-        Array.isArray(anexo)
-      ) {
-        return false;
-      }
-
-      const arquivo = anexo as Record<string, unknown>;
-
-      if (
-        typeof arquivo.id !== "string" ||
-        typeof arquivo.nome !== "string" ||
-        typeof arquivo.tipo !== "string" ||
-        typeof arquivo.tamanho !== "number" ||
-        !Number.isFinite(arquivo.tamanho) ||
-        arquivo.tamanho < 0 ||
-        typeof arquivo.dados !== "string"
-      ) {
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-function lerManutencoes(): Manutencao[] {
-  if (typeof window === "undefined") {
-    throw new Error(
-      "Não é possível acessar as manutenções fora do navegador."
-    );
-  }
-
-  let data: string | null;
-
-  try {
-    data = window.localStorage.getItem(STORAGE_KEY);
   } catch {
     throw new Error(
-      "Não foi possível acessar o armazenamento das manutenções."
+      "Não foi possível conectar ao servidor. Confira se o sistema está funcionando."
     );
   }
 
-  if (data === null) {
-    return [];
-  }
-
-  let registros: unknown;
+  let resultado: unknown;
 
   try {
-    registros = JSON.parse(data);
+    resultado = await resposta.json();
   } catch {
+    throw new Error("O servidor retornou uma resposta inválida.");
+  }
+
+  if (!resposta.ok) {
+    const dados =
+      resultado !== null &&
+      typeof resultado === "object" &&
+      !Array.isArray(resultado)
+        ? (resultado as Record<string, unknown>)
+        : {};
+
     throw new Error(
-      "Os registros de manutenção estão com o formato inválido. O histórico foi preservado; não salve alterações até recuperar os dados."
+      typeof dados.erro === "string"
+        ? dados.erro
+        : `Erro na comunicação com o servidor (${resposta.status}).`
     );
   }
 
-  if (!validarLista(registros)) {
-    throw new Error(
-      "Os registros de manutenção possuem dados inválidos ou IDs duplicados. O histórico foi preservado; não salve alterações até recuperar os dados."
-    );
-  }
-
-  return registros;
+  return resultado;
 }
 
-function gravarManutencoes(
-  manutencoes: Manutencao[],
-  mensagemErro: string
-): void {
-  if (!validarLista(manutencoes)) {
-    throw new Error(
-      "Não foi possível salvar: a lista de manutenções contém dados inválidos ou IDs duplicados."
-    );
-  }
-
-  if (typeof window === "undefined") {
-    throw new Error(
-      "Não é possível salvar manutenções fora do navegador."
-    );
-  }
-
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(manutencoes)
-    );
-  } catch {
-    throw new Error(mensagemErro);
-  }
-}
-
-/**
- * Retorna os registros ou lança um erro caso o armazenamento
- * esteja inacessível ou os dados sejam inválidos.
- *
- * Não retornar [] em caso de falha evita que uma tela confunda
- * um problema de leitura com um histórico realmente vazio.
- */
-export function getManutencoes(): Manutencao[] {
-  return lerManutencoes();
-}
-
-export function saveManutencao(
-  manutencao: NovaManutencao
-): Manutencao {
-  const manutencoes = lerManutencoes();
-
-  if (manutencoes.length >= MAX_MANUTENCOES) {
-    throw new Error(
-      "O limite de registros de manutenção foi atingido."
-    );
-  }
-
-  const novaManutencao: Manutencao = {
-    ...manutencao,
-    id: gerarProximoId(manutencoes),
-  };
-
-  const manutencoesAtualizadas = [
-    ...manutencoes,
-    novaManutencao,
-  ];
-
-  gravarManutencoes(
-    manutencoesAtualizadas,
-    "Não foi possível salvar a manutenção. O armazenamento do navegador pode estar cheio."
-  );
-
-  return novaManutencao;
-}
-
-export function updateManutencao(
-  manutencaoAtualizada: Manutencao
-): void {
+function validarManutencao(valor: unknown): Manutencao {
   if (
-    !manutencaoAtualizada ||
-    typeof manutencaoAtualizada.id !== "string" ||
-    !manutencaoAtualizada.id.trim()
+    valor === null ||
+    typeof valor !== "object" ||
+    Array.isArray(valor)
   ) {
     throw new Error(
-      "O registro de manutenção não possui um ID válido."
+      "O servidor retornou uma manutenção inválida."
     );
   }
 
-  const manutencoes = lerManutencoes();
+  const registro = valor as Record<string, unknown>;
 
-  const indice = manutencoes.findIndex(
-    (manutencao) =>
-      manutencao.id === manutencaoAtualizada.id
-  );
-
-  if (indice === -1) {
+  if (
+    typeof registro.id !== "string" ||
+    !registro.id.trim() ||
+    typeof registro.chromebookId !== "string" ||
+    !registro.chromebookId.trim() ||
+    typeof registro.data !== "string" ||
+    typeof registro.tipo !== "string" ||
+    typeof registro.categoria !== "string" ||
+    typeof registro.descricao !== "string" ||
+    typeof registro.observacao !== "string" ||
+    typeof registro.quemRealizou !== "string" ||
+    !Array.isArray(registro.anexos)
+  ) {
     throw new Error(
-      "A manutenção que você está tentando editar não foi encontrada."
+      "O servidor retornou dados incompletos da manutenção."
     );
   }
 
-  const manutencoesAtualizadas = [...manutencoes];
+  const anexos = registro.anexos.map((valorAnexo) => {
+    if (
+      valorAnexo === null ||
+      typeof valorAnexo !== "object" ||
+      Array.isArray(valorAnexo)
+    ) {
+      throw new Error("O servidor retornou um anexo inválido.");
+    }
 
-  manutencoesAtualizadas[indice] = {
-    ...manutencaoAtualizada,
-    id: manutencoes[indice].id,
+    const anexo = valorAnexo as Record<string, unknown>;
+
+    if (
+      typeof anexo.id !== "string" ||
+      typeof anexo.nome !== "string" ||
+      typeof anexo.tipo !== "string" ||
+      typeof anexo.tamanho !== "number" ||
+      !Number.isFinite(anexo.tamanho) ||
+      anexo.tamanho < 0 ||
+      typeof anexo.dados !== "string"
+    ) {
+      throw new Error(
+        "O servidor retornou dados incompletos de um anexo."
+      );
+    }
+
+    return {
+      id: anexo.id,
+      nome: anexo.nome,
+      tipo: anexo.tipo,
+      tamanho: anexo.tamanho,
+      dados: anexo.dados,
+    };
+  });
+
+  const manutencao: Manutencao = {
+    id: registro.id,
+    chromebookId: registro.chromebookId,
+    data: registro.data,
+    tipo: registro.tipo as Manutencao["tipo"],
+    categoria: registro.categoria as Manutencao["categoria"],
+    descricao: registro.descricao,
+    observacao: registro.observacao,
+    quemRealizou: registro.quemRealizou,
+    anexos,
   };
 
-  gravarManutencoes(
-    manutencoesAtualizadas,
-    "Não foi possível atualizar a manutenção. O armazenamento do navegador pode estar cheio."
-  );
+  if (registro.custo !== undefined && registro.custo !== null) {
+    const custo = Number(registro.custo);
+
+    if (!Number.isFinite(custo) || custo < 0) {
+      throw new Error("O servidor retornou um custo inválido.");
+    }
+
+    manutencao.custo = custo;
+  }
+
+  if (typeof registro.destinoReparo === "string") {
+    manutencao.destinoReparo = registro.destinoReparo;
+  }
+
+  if (typeof registro.resultado === "string") {
+    manutencao.resultado = registro.resultado;
+  }
+
+  return manutencao;
 }
 
-export function deleteManutencao(id: string): void {
+export async function getManutencoes(): Promise<Manutencao[]> {
+  const resultado = await requisicaoAPI(API_URL);
+
+  if (!Array.isArray(resultado)) {
+    throw new Error(
+      "O servidor retornou uma lista de manutenções inválida."
+    );
+  }
+
+  return resultado.map(validarManutencao);
+}
+
+export async function getManutencao(
+  id: string
+): Promise<Manutencao> {
   if (typeof id !== "string" || !id.trim()) {
+    throw new Error("Informe um ID válido para consultar a manutenção.");
+  }
+
+  const resultado = await requisicaoAPI(
+    `${API_URL}?id=${encodeURIComponent(id)}`
+  );
+
+  return validarManutencao(resultado);
+}
+
+export async function saveManutencao(
+  manutencao: NovaManutencao
+): Promise<Manutencao> {
+  const resultado = await requisicaoAPI(API_URL, {
+    method: "POST",
+    body: JSON.stringify(manutencao),
+  });
+
+  return validarManutencao(resultado);
+}
+
+export async function updateManutencao(
+  manutencao: Manutencao
+): Promise<Manutencao> {
+  if (
+    !manutencao ||
+    typeof manutencao.id !== "string" ||
+    !manutencao.id.trim()
+  ) {
     throw new Error(
-      "Informe um ID válido para excluir a manutenção."
+      "A manutenção não possui um identificador válido."
     );
   }
 
-  const manutencoes = lerManutencoes();
+  const resultado = await requisicaoAPI(API_URL, {
+    method: "PUT",
+    body: JSON.stringify(manutencao),
+  });
 
-  const existe = manutencoes.some(
-    (manutencao) => manutencao.id === id
-  );
+  return validarManutencao(resultado);
+}
 
-  if (!existe) {
-    throw new Error(
-      "A manutenção que você está tentando excluir não foi encontrada."
-    );
+export async function deleteManutencao(id: string): Promise<void> {
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error("Informe um ID válido para excluir a manutenção.");
   }
 
-  const manutencoesAtualizadas = manutencoes.filter(
-    (manutencao) => manutencao.id !== id
-  );
-
-  gravarManutencoes(
-    manutencoesAtualizadas,
-    "Não foi possível excluir a manutenção."
+  await requisicaoAPI(
+    `${API_URL}?id=${encodeURIComponent(id)}`,
+    { method: "DELETE" }
   );
 }

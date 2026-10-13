@@ -3,14 +3,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  getChromebooks,
-  updateChromebook,
-} from "@/lib/chromebooks";
-import {
-  deleteManutencao,
-  saveManutencao,
-} from "@/lib/manutencoes";
+import { getChromebooks } from "@/lib/chromebooks";
+import { saveManutencao } from "@/lib/manutencoes";
 import type {
   AnexoManutencao,
   CategoriaManutencao,
@@ -18,20 +12,14 @@ import type {
 } from "@/types/manutencao";
 import type { Chromebook } from "@/types/chromebook";
 
-const tipos: {
-  valor: TipoManutencao;
-  nome: string;
-}[] = [
+const tipos: { valor: TipoManutencao; nome: string }[] = [
   { valor: "ocorrencia", nome: "Ocorrência" },
   { valor: "manutencao", nome: "Manutenção" },
   { valor: "reposicao-de-peca", nome: "Reposição de Peça" },
   { valor: "envio-para-reparo", nome: "Envio para Reparo" },
 ];
 
-const categorias: {
-  valor: CategoriaManutencao;
-  nome: string;
-}[] = [
+const categorias: { valor: CategoriaManutencao; nome: string }[] = [
   { valor: "tela", nome: "Tela" },
   { valor: "teclado", nome: "Teclado" },
   { valor: "bateria", nome: "Bateria" },
@@ -76,9 +64,7 @@ function dataISOValida(data: string): boolean {
 }
 
 function formatarTamanho(tamanho: number): string {
-  if (tamanho < 1024) {
-    return `${tamanho} B`;
-  }
+  if (tamanho < 1024) return `${tamanho} B`;
 
   if (tamanho < 1024 * 1024) {
     return `${(tamanho / 1024).toFixed(1)} KB`;
@@ -143,33 +129,53 @@ export default function NovaManutencaoPage() {
   const [processandoAnexos, setProcessandoAnexos] = useState(false);
 
   useEffect(() => {
-    if (!chromebookId) {
-      setCarregando(false);
-      setErro("Não foi informado o identificador do Chromebook.");
-      return;
-    }
+    let cancelado = false;
 
-    try {
-      const encontrado = getChromebooks().find(
-        (item) => item.id === chromebookId
-      );
-
-      setChromebook(encontrado ?? null);
-      setData(obterDataLocal());
-
-      if (!encontrado) {
-        setErro("Não foi possível localizar o Chromebook.");
+    async function carregarChromebook() {
+      if (!chromebookId) {
+        setErro("Não foi informado o identificador do Chromebook.");
+        setCarregando(false);
+        return;
       }
-    } catch (erroLeitura) {
-      setChromebook(null);
-      setErro(
-        erroLeitura instanceof Error
-          ? erroLeitura.message
-          : "Não foi possível carregar os dados do Chromebook."
-      );
-    } finally {
-      setCarregando(false);
+
+      try {
+        const chromebooks = await getChromebooks();
+
+        if (cancelado) return;
+
+        const encontrado = chromebooks.find(
+          (item) => item.id === chromebookId
+        );
+
+        setChromebook(encontrado ?? null);
+        setData(obterDataLocal());
+
+        if (!encontrado) {
+          setErro("Não foi possível localizar o Chromebook.");
+        } else {
+          setErro("");
+        }
+      } catch (erroLeitura) {
+        if (cancelado) return;
+
+        setChromebook(null);
+        setErro(
+          erroLeitura instanceof Error
+            ? erroLeitura.message
+            : "Não foi possível carregar os dados do Chromebook."
+        );
+      } finally {
+        if (!cancelado) {
+          setCarregando(false);
+        }
+      }
     }
+
+    void carregarChromebook();
+
+    return () => {
+      cancelado = true;
+    };
   }, [chromebookId]);
 
   async function selecionarArquivos(
@@ -179,12 +185,9 @@ export default function NovaManutencaoPage() {
       event.target.files ?? []
     );
 
-    // Libera o mesmo arquivo para ser selecionado novamente.
     event.target.value = "";
 
-    if (arquivosSelecionados.length === 0) {
-      return;
-    }
+    if (arquivosSelecionados.length === 0) return;
 
     if (processandoAnexosRef.current || salvandoRef.current) {
       setErro("Aguarde o processamento atual antes de continuar.");
@@ -237,10 +240,7 @@ export default function NovaManutencaoPage() {
       }
 
       if (novosAnexos.length > 0) {
-        setAnexos((atuais) => [
-          ...atuais,
-          ...novosAnexos,
-        ]);
+        setAnexos((atuais) => [...atuais, ...novosAnexos]);
       }
 
       if (errosArquivos.length > 0) {
@@ -253,9 +253,7 @@ export default function NovaManutencaoPage() {
   }
 
   function removerAnexo(id: string) {
-    if (processandoAnexosRef.current || salvandoRef.current) {
-      return;
-    }
+    if (processandoAnexosRef.current || salvandoRef.current) return;
 
     setAnexos((atuais) =>
       atuais.filter((anexo) => anexo.id !== id)
@@ -266,9 +264,7 @@ export default function NovaManutencaoPage() {
   async function salvar(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (salvandoRef.current) {
-      return;
-    }
+    if (salvandoRef.current) return;
 
     setErro("");
 
@@ -330,7 +326,7 @@ export default function NovaManutencaoPage() {
     ) {
       setErro(
         chromebook.status === "em-reparo"
-          ? "Este Chromebook já está marcado como No reparo."
+          ? "Este Chromebook já está marcado como em reparo."
           : "Um Chromebook para descarte não pode ser enviado para reparo por este formulário."
       );
       return;
@@ -338,7 +334,6 @@ export default function NovaManutencaoPage() {
 
     let custoNumerico: number | undefined;
 
-    // O custo da assistência externa só é registrado no retorno.
     if (tipo !== "envio-para-reparo" && custo.trim() !== "") {
       const valorInformado = Number(custo.replace(",", "."));
 
@@ -352,9 +347,8 @@ export default function NovaManutencaoPage() {
         return;
       }
 
-      custoNumerico = Math.round(
-        (valorInformado + Number.EPSILON) * 100
-      ) / 100;
+      custoNumerico =
+        Math.round((valorInformado + Number.EPSILON) * 100) / 100;
 
       if (!Number.isFinite(custoNumerico)) {
         setErro("O custo informado é muito alto.");
@@ -365,23 +359,17 @@ export default function NovaManutencaoPage() {
     salvandoRef.current = true;
     setSalvando(true);
 
-    let manutencaoSalva: { id: string } | null = null;
-    let estadoAtual: Chromebook | undefined;
-    let atualizacaoDeStatusTentada = false;
-    let erroAoReverter = false;
-    let erroAoExcluirHistorico = false;
-
     try {
-      // Consulta novamente os dados imediatamente antes de gravar.
-      const chromebooksAtuais = getChromebooks();
+      // Confere o estado mais recente antes de gravar.
+      const chromebooksAtuais = await getChromebooks();
 
-      estadoAtual = chromebooksAtuais.find(
+      const estadoAtual = chromebooksAtuais.find(
         (item) => item.id === chromebook.id
       );
 
       if (!estadoAtual) {
         throw new Error(
-          "O Chromebook não foi encontrado no armazenamento."
+          "O Chromebook não foi encontrado no banco de dados."
         );
       }
 
@@ -392,12 +380,12 @@ export default function NovaManutencaoPage() {
       ) {
         throw new Error(
           estadoAtual.status === "em-reparo"
-            ? "Este Chromebook já está marcado como No reparo."
+            ? "Este Chromebook já está marcado como em reparo."
             : "A situação atual do Chromebook não permite enviá-lo para reparo."
         );
       }
 
-      manutencaoSalva = saveManutencao({
+      await saveManutencao({
         chromebookId: estadoAtual.id,
         data,
         tipo,
@@ -414,52 +402,20 @@ export default function NovaManutencaoPage() {
         resultado: resultado.trim(),
       });
 
-      if (tipo === "envio-para-reparo") {
-        // Registra a tentativa antes de atualizar o status.
-        atualizacaoDeStatusTentada = true;
-
-        updateChromebook({
-          ...estadoAtual,
-          status: "em-reparo",
-        });
-      }
+      router.push(
+        "/chromebooks/detalhes?id=" +
+          encodeURIComponent(chromebook.id)
+      );
     } catch (erroOperacao) {
-      if (atualizacaoDeStatusTentada && estadoAtual) {
-        try {
-          updateChromebook(estadoAtual);
-        } catch {
-          erroAoReverter = true;
-        }
-      }
-
-      if (manutencaoSalva) {
-        try {
-          deleteManutencao(manutencaoSalva.id);
-        } catch {
-          erroAoExcluirHistorico = true;
-        }
-      }
-
-      let mensagem =
+      setErro(
         erroOperacao instanceof Error
           ? erroOperacao.message
-          : "Não foi possível concluir a operação.";
+          : "Não foi possível salvar a manutenção na nuvem."
+      );
 
-      if (erroAoReverter || erroAoExcluirHistorico) {
-        mensagem =
-          "Ocorreu uma falha e não foi possível reverter todas as alterações. Confira o status do Chromebook e o histórico antes de tentar novamente.";
-      }
-
-      setErro(mensagem);
       salvandoRef.current = false;
       setSalvando(false);
-      return;
     }
-
-    router.push(
-      "/chromebooks/detalhes?id=" +
-        encodeURIComponent(chromebook.id)
-    );
   }
 
   if (carregando) {
@@ -581,7 +537,7 @@ export default function NovaManutencaoPage() {
 
               {tipo === "envio-para-reparo" && (
                 <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-                  Ao salvar, o status mudará para No reparo.
+                  Ao salvar, o status mudará para Em reparo.
                   O custo final será registrado no retorno.
                 </p>
               )}
@@ -629,9 +585,7 @@ export default function NovaManutencaoPage() {
               </label>
               <textarea
                 value={observacao}
-                onChange={(event) =>
-                  setObservacao(event.target.value)
-                }
+                onChange={(event) => setObservacao(event.target.value)}
                 rows={3}
                 placeholder="Alguma informação adicional..."
                 className={`${classeInput} resize-none`}

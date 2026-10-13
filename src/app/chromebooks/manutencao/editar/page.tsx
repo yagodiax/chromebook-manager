@@ -139,52 +139,77 @@ function EditarManutencaoConteudo() {
     useState(false);
 
   useEffect(() => {
-    try {
-      const id = searchParams.get("id");
+    let cancelado = false;
 
-      if (!id) {
-        setCarregando(false);
-        return;
+    async function carregar() {
+      try {
+        const id = searchParams.get("id");
+
+        if (!id) {
+          setErro("Não foi informado o ID da manutenção.");
+          return;
+        }
+
+        const [manutencoes, chromebooks] = await Promise.all([
+          getManutencoes(),
+          getChromebooks(),
+        ]);
+
+        if (cancelado) {
+          return;
+        }
+
+        const encontrado = manutencoes.find(
+          (item) => item.id === id
+        );
+
+        if (!encontrado) {
+          setErro("O registro informado não existe no sistema.");
+          return;
+        }
+
+        const equipamento = chromebooks.find(
+          (item) => item.id === encontrado.chromebookId
+        );
+
+        setManutencao(encontrado);
+        setChromebook(equipamento || null);
+        setData(encontrado.data);
+        setTipo(encontrado.tipo);
+        setCategoria(encontrado.categoria);
+        setDescricao(encontrado.descricao);
+        setObservacao(encontrado.observacao);
+        setQuemRealizou(encontrado.quemRealizou);
+
+        setCusto(
+          encontrado.custo !== undefined
+            ? String(encontrado.custo)
+            : ""
+        );
+
+        setDestinoReparo(encontrado.destinoReparo ?? "");
+        setResultado(encontrado.resultado ?? "");
+        setAnexos(encontrado.anexos || []);
+      } catch (erroCarregamento) {
+        if (!cancelado) {
+          setErro(
+            erroCarregamento instanceof Error
+              ? erroCarregamento.message
+              : "Não foi possível carregar a manutenção do banco de dados."
+          );
+        }
+      } finally {
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
-
-      const encontrado = getManutencoes().find(
-        (item) => item.id === id
-      );
-
-      if (!encontrado) {
-        setCarregando(false);
-        return;
-      }
-
-      const equipamento = getChromebooks().find(
-        (item) => item.id === encontrado.chromebookId
-      );
-
-      setManutencao(encontrado);
-      setChromebook(equipamento || null);
-      setData(encontrado.data);
-      setTipo(encontrado.tipo);
-      setCategoria(encontrado.categoria);
-      setDescricao(encontrado.descricao);
-      setObservacao(encontrado.observacao);
-      setQuemRealizou(encontrado.quemRealizou);
-
-      setCusto(
-        encontrado.custo !== undefined
-          ? String(encontrado.custo)
-          : ""
-      );
-
-      setDestinoReparo(encontrado.destinoReparo ?? "");
-      setResultado(encontrado.resultado ?? "");
-      setAnexos(encontrado.anexos || []);
-    } catch {
-      setErro(
-        "Não foi possível carregar o registro. Verifique os dados salvos no navegador."
-      );
-    } finally {
-      setCarregando(false);
     }
+
+    void carregar();
+
+    return () => {
+      cancelado = true;
+    };
   }, [searchParams]);
 
   async function selecionarArquivos(
@@ -266,7 +291,7 @@ function EditarManutencaoConteudo() {
     setErro("");
   }
 
-  function salvar() {
+  async function salvar() {
     if (
       salvamentoEmAndamento.current ||
       salvando ||
@@ -378,7 +403,7 @@ function EditarManutencaoConteudo() {
         resultado: resultado.trim(),
       };
 
-      updateManutencao(atualizada);
+      await updateManutencao(atualizada);
 
       router.push(
         "/chromebooks/detalhes?id=" +
@@ -393,7 +418,7 @@ function EditarManutencaoConteudo() {
       setErro(
         mensagem
           ? `Não foi possível salvar as alterações: ${mensagem}`
-          : "Não foi possível salvar as alterações. Verifique o espaço disponível no armazenamento do navegador."
+          : "Não foi possível salvar as alterações. Verifique sua conexão com o banco de dados e tente novamente."
       );
 
       salvamentoEmAndamento.current = false;

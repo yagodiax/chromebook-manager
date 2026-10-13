@@ -2,10 +2,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { saveChromebook } from "@/lib/chromebooks";
 import type { ChromebookStatus } from "@/types/chromebook";
 
 export default function NovoChromebookPage() {
+  const router = useRouter();
+
   const [numero, setNumero] = useState("");
   const [mac, setMac] = useState("");
   const [numeroSerie, setNumeroSerie] = useState("");
@@ -14,6 +17,9 @@ export default function NovoChromebookPage() {
   const [status, setStatus] =
     useState<ChromebookStatus>("disponivel");
   const [observacoes, setObservacoes] = useState("");
+
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
 
   function formatarMac(valor: string) {
     const hexadecimal = valor
@@ -26,7 +32,11 @@ export default function NovoChromebookPage() {
     return partes ? partes.join(":") : "";
   }
 
-  function cadastrar() {
+  async function cadastrar() {
+    if (salvando) return;
+
+    setErro("");
+
     if (
       !numero.trim() ||
       !mac.trim() ||
@@ -34,21 +44,23 @@ export default function NovoChromebookPage() {
       !modelo.trim() ||
       !sala.trim()
     ) {
-      alert(
+      setErro(
         "Preencha Número, MAC, Número de série, Modelo e Sala."
       );
       return;
     }
 
     if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(mac)) {
-      alert(
+      setErro(
         "O MAC precisa conter 12 caracteres hexadecimais, no formato AA:BB:CC:DD:EE:FF."
       );
       return;
     }
 
+    setSalvando(true);
+
     try {
-      saveChromebook({
+      await saveChromebook({
         numero: numero.trim(),
         mac: mac.toUpperCase(),
         numeroSerie: numeroSerie.trim(),
@@ -58,13 +70,18 @@ export default function NovoChromebookPage() {
         observacoes: observacoes.trim(),
       });
 
-      window.location.href = "/chromebooks";
+      router.push("/chromebooks");
+      router.refresh();
     } catch (error) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("Não foi possível cadastrar o Chromebook.");
-      }
+      console.error("Erro ao cadastrar Chromebook:", error);
+
+      setErro(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cadastrar o Chromebook."
+      );
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -74,9 +91,7 @@ export default function NovoChromebookPage() {
         <div className="mb-8">
           <button
             type="button"
-            onClick={() => {
-              window.location.href = "/chromebooks";
-            }}
+            onClick={() => router.push("/chromebooks")}
             className="mb-4 text-sm font-medium text-gray-600 transition hover:text-black dark:text-gray-300 dark:hover:text-white"
           >
             ← Voltar para Chromebooks
@@ -91,7 +106,13 @@ export default function NovoChromebookPage() {
           </p>
         </div>
 
-        <div className="rounded-xl bg-white p-6 shadow transition-colors sm:p-8 dark:bg-[#444449]">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void cadastrar();
+          }}
+          className="rounded-xl bg-white p-6 shadow transition-colors sm:p-8 dark:bg-[#444449]"
+        >
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               Identificação
@@ -101,6 +122,15 @@ export default function NovoChromebookPage() {
               O ID permanente será gerado automaticamente pelo sistema.
             </p>
           </div>
+
+          {erro && (
+            <div
+              role="alert"
+              className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+            >
+              {erro}
+            </div>
+          )}
 
           <div className="grid gap-6 md:grid-cols-2">
             <div>
@@ -115,11 +145,10 @@ export default function NovoChromebookPage() {
                 id="numero"
                 type="text"
                 value={numero}
-                onChange={(event) =>
-                  setNumero(event.target.value)
-                }
+                onChange={(event) => setNumero(event.target.value)}
                 placeholder="Ex.: 001"
                 required
+                maxLength={50}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
@@ -163,6 +192,7 @@ export default function NovoChromebookPage() {
                 }
                 placeholder="Número de série do equipamento"
                 required
+                maxLength={100}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
@@ -179,11 +209,10 @@ export default function NovoChromebookPage() {
                 id="modelo"
                 type="text"
                 value={modelo}
-                onChange={(event) =>
-                  setModelo(event.target.value)
-                }
+                onChange={(event) => setModelo(event.target.value)}
                 placeholder="Ex.: Acer Chromebook 311"
                 required
+                maxLength={150}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
@@ -200,11 +229,10 @@ export default function NovoChromebookPage() {
                 id="sala"
                 type="text"
                 value={sala}
-                onChange={(event) =>
-                  setSala(event.target.value)
-                }
+                onChange={(event) => setSala(event.target.value)}
                 placeholder="Ex.: Sala 203 ou Reserva"
                 required
+                maxLength={100}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
@@ -221,24 +249,17 @@ export default function NovoChromebookPage() {
                 id="status"
                 value={status}
                 onChange={(event) =>
-                  setStatus(
-                    event.target.value as ChromebookStatus
-                  )
+                  setStatus(event.target.value as ChromebookStatus)
                 }
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100"
               >
                 <option value="disponivel">
                   Disponível — equipamento reserva
                 </option>
-
-                <option value="em-uso">
-                  Em uso — em operação
-                </option>
-
+                <option value="em-uso">Em uso — em operação</option>
                 <option value="em-reparo">
                   No reparo — enviado à assistência
                 </option>
-
                 <option value="para-descarte">
                   Para descarte — fora de circulação
                 </option>
@@ -258,10 +279,9 @@ export default function NovoChromebookPage() {
               id="observacoes"
               rows={4}
               value={observacoes}
-              onChange={(event) =>
-                setObservacoes(event.target.value)
-              }
+              onChange={(event) => setObservacoes(event.target.value)}
               placeholder="Informações adicionais sobre o equipamento..."
+              maxLength={5000}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
             />
           </div>
@@ -269,23 +289,22 @@ export default function NovoChromebookPage() {
           <div className="mt-8 flex flex-col-reverse justify-end gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={() => {
-                window.location.href = "/chromebooks";
-              }}
-              className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:border-[#66666c] dark:text-gray-100 dark:hover:bg-[#55555b]"
+              disabled={salvando}
+              onClick={() => router.push("/chromebooks")}
+              className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#66666c] dark:text-gray-100 dark:hover:bg-[#55555b]"
             >
               Cancelar
             </button>
 
             <button
-              type="button"
-              onClick={cadastrar}
-              className="rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
+              type="submit"
+              disabled={salvando}
+              className="rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
             >
-              Cadastrar Chromebook
+              {salvando ? "Salvando..." : "Cadastrar Chromebook"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </main>
   );

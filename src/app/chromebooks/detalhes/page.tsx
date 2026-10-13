@@ -43,7 +43,7 @@ function obterTipoLabel(tipo: Manutencao["tipo"]): string {
 }
 
 function obterCategoriaLabel(
-  categoria: Manutencao["categoria"]
+  categoria: Manutencao["categoria"],
 ): string {
   const categorias: Record<Manutencao["categoria"], string> = {
     tela: "Tela",
@@ -95,6 +95,7 @@ function formatarTamanho(tamanho: number): string {
 export default function DetalhesChromebookPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const id = searchParams.get("id");
 
   const [chromebook, setChromebook] =
     useState<Chromebook | null>(null);
@@ -107,44 +108,77 @@ export default function DetalhesChromebookPage() {
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const id = searchParams.get("id");
+    let cancelado = false;
+
+    async function carregarDados() {
+      setCarregando(true);
+      setErro("");
+      setChromebook(null);
+      setManutencoes([]);
 
       if (!id) {
         setErro("Nenhum Chromebook foi informado.");
+        setCarregando(false);
         return;
       }
 
-      const encontrado = getChromebooks().find(
-        (item) => item.id === id
-      );
+      try {
+        const [listaChromebooks, listaManutencoes] = await Promise.all([
+          getChromebooks(),
+          getManutencoes(),
+        ]);
 
-      if (!encontrado) {
-        setChromebook(null);
-        return;
+        if (cancelado) return;
+
+        const encontrado = listaChromebooks.find(
+          (item) => item.id === id,
+        );
+
+        if (!encontrado) {
+          setErro("O Chromebook informado não existe no sistema.");
+          setCarregando(false);
+          return;
+        }
+
+        const manutencoesDoChromebook = listaManutencoes
+          .filter((item) => item.chromebookId === id)
+          .sort((a, b) => b.data.localeCompare(a.data));
+
+        setChromebook(encontrado);
+        setManutencoes(manutencoesDoChromebook);
+      } catch (erroCarregamento) {
+        if (cancelado) return;
+
+        console.error(
+          "Erro ao carregar detalhes do Chromebook:",
+          erroCarregamento,
+        );
+
+        setErro(
+          erroCarregamento instanceof Error
+            ? erroCarregamento.message
+            : "Não foi possível carregar os dados do Chromebook.",
+        );
+      } finally {
+        if (!cancelado) {
+          setCarregando(false);
+        }
       }
-
-      const manutencoesDoChromebook = getManutencoes()
-        .filter((item) => item.chromebookId === id)
-        .sort((a, b) => b.data.localeCompare(a.data));
-
-      setChromebook(encontrado);
-      setManutencoes(manutencoesDoChromebook);
-    } catch {
-      setErro(
-        "Não foi possível carregar os dados. Verifique o armazenamento do navegador e tente novamente."
-      );
-    } finally {
-      setCarregando(false);
     }
-  }, [searchParams]);
+
+    void carregarDados();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [id]);
 
   function abrirEdicao() {
     if (!chromebook) return;
 
     router.push(
       "/chromebooks/editar?id=" +
-        encodeURIComponent(chromebook.id)
+        encodeURIComponent(chromebook.id),
     );
   }
 
@@ -153,7 +187,7 @@ export default function DetalhesChromebookPage() {
 
     router.push(
       "/chromebooks/manutencao/nova?chromebook=" +
-        encodeURIComponent(chromebook.id)
+        encodeURIComponent(chromebook.id),
     );
   }
 
@@ -162,37 +196,38 @@ export default function DetalhesChromebookPage() {
 
     router.push(
       "/chromebooks/manutencao/retorno?chromebook=" +
-        encodeURIComponent(chromebook.id)
+        encodeURIComponent(chromebook.id),
     );
   }
 
-  function editarManutencao(id: string) {
+  function editarManutencao(idManutencao: string) {
     router.push(
       "/chromebooks/manutencao/editar?id=" +
-        encodeURIComponent(id)
+        encodeURIComponent(idManutencao),
     );
   }
 
-  function excluirManutencao(id: string) {
-    if (excluindoId) return;
+  async function excluirManutencao(idManutencao: string) {
+    if (excluindoId !== null) return;
 
     const confirmar = window.confirm(
-      "Tem certeza que deseja excluir este registro de manutenção? Esta ação não pode ser desfeita."
+      "Tem certeza que deseja excluir este registro de manutenção? Esta ação não pode ser desfeita.",
     );
 
     if (!confirmar) return;
 
     setErro("");
-    setExcluindoId(id);
+    setExcluindoId(idManutencao);
 
     try {
-      // Primeiro exclui do armazenamento. Só depois atualiza a tela.
-      deleteManutencao(id);
+      await deleteManutencao(idManutencao);
 
       setManutencoes((atuais) =>
-        atuais.filter((item) => item.id !== id)
+        atuais.filter((item) => item.id !== idManutencao),
       );
     } catch (erroExclusao) {
+      console.error("Erro ao excluir manutenção:", erroExclusao);
+
       const mensagem =
         erroExclusao instanceof Error
           ? erroExclusao.message
@@ -201,7 +236,7 @@ export default function DetalhesChromebookPage() {
       setErro(
         mensagem
           ? `Não foi possível excluir o registro: ${mensagem}`
-          : "Não foi possível excluir o registro. Os dados foram mantidos na tela."
+          : "Não foi possível excluir o registro. Tente novamente.",
       );
     } finally {
       setExcluindoId(null);
@@ -214,7 +249,7 @@ export default function DetalhesChromebookPage() {
 
       if (!novaAba) {
         setErro(
-          "O navegador bloqueou a abertura do arquivo. Permita pop-ups para este site."
+          "O navegador bloqueou a abertura do arquivo. Permita pop-ups para este site.",
         );
         return;
       }
@@ -239,7 +274,7 @@ export default function DetalhesChromebookPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
         <p className="text-gray-600 dark:text-gray-300">
-          Carregando...
+          Carregando detalhes do Chromebook...
         </p>
       </main>
     );
@@ -248,14 +283,13 @@ export default function DetalhesChromebookPage() {
   if (!chromebook) {
     return (
       <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-[#5a5a60] dark:bg-[#444449]">
+        <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-[#5a5a60] dark:bg-[#444449]">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Chromebook não encontrado
           </h1>
 
           <p className="mt-2 text-gray-600 dark:text-gray-300">
-            {erro ||
-              "O Chromebook informado não existe no sistema."}
+            {erro || "O Chromebook informado não existe no sistema."}
           </p>
 
           <button
@@ -274,10 +308,7 @@ export default function DetalhesChromebookPage() {
     manutencoes.length > 0 ? manutencoes[0] : null;
 
   const custoTotal = manutencoes.reduce((total, item) => {
-    // Envio para reparo não representa o custo final do serviço.
-    if (item.tipo === "envio-para-reparo") {
-      return total;
-    }
+    if (item.tipo === "envio-para-reparo") return total;
 
     const custoItem = item.custo;
 
@@ -293,18 +324,18 @@ export default function DetalhesChromebookPage() {
   }, 0);
 
   const reparos = manutencoes.filter(
-    (item) => item.tipo === "envio-para-reparo"
+    (item) => item.tipo === "envio-para-reparo",
   );
 
   const retornos = manutencoes.filter(
-    (item) => item.tipo === "retorno-de-reparo"
+    (item) => item.tipo === "retorno-de-reparo",
   );
 
   const ultimoReparo = reparos.length > 0 ? reparos[0] : null;
   const ultimoRetorno = retornos.length > 0 ? retornos[0] : null;
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8 transition-colors dark:bg-[#3a3a3f]">
+    <main className="min-h-screen bg-gray-100 p-5 transition-colors sm:p-8 dark:bg-[#3a3a3f]">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
@@ -353,7 +384,7 @@ export default function DetalhesChromebookPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-colors lg:col-span-2 dark:border-[#5a5a60] dark:bg-[#444449]">
-            <div className="mb-6 flex items-center justify-between gap-3">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Informações do Chromebook
@@ -699,7 +730,7 @@ export default function DetalhesChromebookPage() {
                           <button
                             type="button"
                             disabled={excluindoId !== null}
-                            onClick={() => excluirManutencao(manutencao.id)}
+                            onClick={() => void excluirManutencao(manutencao.id)}
                             className="rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-300 dark:hover:bg-[#4a3838]"
                           >
                             {excluindoId === manutencao.id

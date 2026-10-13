@@ -12,7 +12,7 @@ import type {
 } from "@/types/chromebook";
 
 const inputClassName =
-  "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500";
+  "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500";
 
 const labelClassName =
   "mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200";
@@ -36,52 +36,66 @@ export default function EditarChromebookPage() {
   const [sucesso, setSucesso] = useState(false);
 
   useEffect(() => {
-    try {
-      const parametros = new URLSearchParams(
-        window.location.search
-      );
+    let ativo = true;
 
-      const id =
-        parametros.get("id") ??
-        parametros.get("chromebookId");
-
-      if (!id) {
-        setErro(
-          "Nenhum Chromebook foi selecionado. Volte para a listagem e clique em Editar no equipamento desejado."
+    async function carregarChromebook() {
+      try {
+        const parametros = new URLSearchParams(
+          window.location.search
         );
-        return;
-      }
 
-      const chromebooks = getChromebooks();
+        const id =
+          parametros.get("id") ??
+          parametros.get("chromebookId");
 
-      const encontrado = chromebooks.find(
-        (chromebook) => chromebook.id === id
-      );
+        if (!id) {
+          throw new Error(
+            "Nenhum Chromebook foi selecionado. Volte para a listagem e clique em Editar no equipamento desejado."
+          );
+        }
 
-      if (!encontrado) {
-        setErro(
-          "Chromebook não encontrado. Volte para a listagem e tente novamente."
+        const chromebooks = await getChromebooks();
+
+        const encontrado = chromebooks.find(
+          (chromebook) => chromebook.id === id
         );
-        return;
-      }
 
-      setChromebookOriginal(encontrado);
-      setNumero(encontrado.numero);
-      setMac(encontrado.mac);
-      setNumeroSerie(encontrado.numeroSerie);
-      setModelo(encontrado.modelo);
-      setSala(encontrado.sala);
-      setStatus(encontrado.status);
-      setObservacoes(encontrado.observacoes);
-    } catch (error) {
-      setErro(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível carregar o Chromebook."
-      );
-    } finally {
-      setCarregando(false);
+        if (!encontrado) {
+          throw new Error(
+            "Chromebook não encontrado. Volte para a listagem e tente novamente."
+          );
+        }
+
+        if (!ativo) return;
+
+        setChromebookOriginal(encontrado);
+        setNumero(encontrado.numero);
+        setMac(encontrado.mac);
+        setNumeroSerie(encontrado.numeroSerie);
+        setModelo(encontrado.modelo);
+        setSala(encontrado.sala);
+        setStatus(encontrado.status);
+        setObservacoes(encontrado.observacoes ?? "");
+      } catch (error) {
+        if (!ativo) return;
+
+        setErro(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar o Chromebook."
+        );
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
     }
+
+    void carregarChromebook();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   function formatarMac(valor: string) {
@@ -95,7 +109,7 @@ export default function EditarChromebookPage() {
     return partes ? partes.join(":") : "";
   }
 
-  function salvarAlteracoes() {
+  async function salvarAlteracoes() {
     if (salvando || sucesso) return;
 
     setErro("");
@@ -128,7 +142,7 @@ export default function EditarChromebookPage() {
     setSalvando(true);
 
     try {
-      updateChromebook({
+      await updateChromebook({
         ...chromebookOriginal,
         numero: numero.trim(),
         mac: mac.toUpperCase(),
@@ -145,6 +159,8 @@ export default function EditarChromebookPage() {
         window.location.href = "/chromebooks";
       }, 1800);
     } catch (error) {
+      console.error("Erro ao atualizar Chromebook:", error);
+
       setErro(
         error instanceof Error
           ? error.message
@@ -244,175 +260,186 @@ export default function EditarChromebookPage() {
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label htmlFor="numero" className={labelClassName}>
-                  Número
-                </label>
-                <input
-                  id="numero"
-                  type="text"
-                  value={numero}
-                  onChange={(event) =>
-                    setNumero(event.target.value)
-                  }
-                  placeholder="Ex.: 001"
-                  required
-                  disabled={salvando || sucesso}
-                  className={inputClassName}
-                />
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void salvarAlteracoes();
+              }}
+            >
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label htmlFor="numero" className={labelClassName}>
+                    Número
+                  </label>
+                  <input
+                    id="numero"
+                    type="text"
+                    value={numero}
+                    onChange={(event) =>
+                      setNumero(event.target.value)
+                    }
+                    placeholder="Ex.: 001"
+                    maxLength={50}
+                    required
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="mac" className={labelClassName}>
+                    Endereço MAC
+                  </label>
+                  <input
+                    id="mac"
+                    type="text"
+                    value={mac}
+                    onChange={(event) =>
+                      setMac(formatarMac(event.target.value))
+                    }
+                    placeholder="AA:BB:CC:DD:EE:FF"
+                    maxLength={17}
+                    required
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="numeroSerie"
+                    className={labelClassName}
+                  >
+                    Número de série
+                  </label>
+                  <input
+                    id="numeroSerie"
+                    type="text"
+                    value={numeroSerie}
+                    onChange={(event) =>
+                      setNumeroSerie(event.target.value)
+                    }
+                    placeholder="Número de série do equipamento"
+                    maxLength={100}
+                    required
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="modelo" className={labelClassName}>
+                    Modelo
+                  </label>
+                  <input
+                    id="modelo"
+                    type="text"
+                    value={modelo}
+                    onChange={(event) =>
+                      setModelo(event.target.value)
+                    }
+                    placeholder="Ex.: Acer Chromebook 311"
+                    maxLength={150}
+                    required
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="sala" className={labelClassName}>
+                    Sala de destino
+                  </label>
+                  <input
+                    id="sala"
+                    type="text"
+                    value={sala}
+                    onChange={(event) =>
+                      setSala(event.target.value)
+                    }
+                    placeholder="Ex.: Sala 203 ou Reserva"
+                    maxLength={100}
+                    required
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="status" className={labelClassName}>
+                    Situação
+                  </label>
+                  <select
+                    id="status"
+                    value={status}
+                    onChange={(event) =>
+                      setStatus(
+                        event.target.value as ChromebookStatus
+                      )
+                    }
+                    disabled={salvando || sucesso}
+                    className={inputClassName}
+                  >
+                    <option value="disponivel">
+                      Disponível — equipamento reserva
+                    </option>
+                    <option value="em-uso">
+                      Em uso — em operação
+                    </option>
+                    <option value="em-reparo">
+                      No reparo — enviado à assistência
+                    </option>
+                    <option value="para-descarte">
+                      Para descarte — fora de circulação
+                    </option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="mac" className={labelClassName}>
-                  Endereço MAC
-                </label>
-                <input
-                  id="mac"
-                  type="text"
-                  value={mac}
-                  onChange={(event) =>
-                    setMac(formatarMac(event.target.value))
-                  }
-                  placeholder="AA:BB:CC:DD:EE:FF"
-                  maxLength={17}
-                  required
-                  disabled={salvando || sucesso}
-                  className={inputClassName}
-                />
-              </div>
-
-              <div>
+              <div className="mt-6">
                 <label
-                  htmlFor="numeroSerie"
+                  htmlFor="observacoes"
                   className={labelClassName}
                 >
-                  Número de série
+                  Observações
                 </label>
-                <input
-                  id="numeroSerie"
-                  type="text"
-                  value={numeroSerie}
+                <textarea
+                  id="observacoes"
+                  rows={4}
+                  value={observacoes}
                   onChange={(event) =>
-                    setNumeroSerie(event.target.value)
+                    setObservacoes(event.target.value)
                   }
-                  placeholder="Número de série do equipamento"
-                  required
+                  placeholder="Informações adicionais sobre o equipamento..."
+                  maxLength={5000}
                   disabled={salvando || sucesso}
                   className={inputClassName}
                 />
               </div>
 
-              <div>
-                <label htmlFor="modelo" className={labelClassName}>
-                  Modelo
-                </label>
-                <input
-                  id="modelo"
-                  type="text"
-                  value={modelo}
-                  onChange={(event) =>
-                    setModelo(event.target.value)
-                  }
-                  placeholder="Ex.: Acer Chromebook 311"
-                  required
+              <div className="mt-8 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={voltar}
                   disabled={salvando || sucesso}
-                  className={inputClassName}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="sala" className={labelClassName}>
-                  Sala de destino
-                </label>
-                <input
-                  id="sala"
-                  type="text"
-                  value={sala}
-                  onChange={(event) =>
-                    setSala(event.target.value)
-                  }
-                  placeholder="Ex.: Sala 203 ou Reserva"
-                  required
-                  disabled={salvando || sucesso}
-                  className={inputClassName}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="status" className={labelClassName}>
-                  Situação
-                </label>
-                <select
-                  id="status"
-                  value={status}
-                  onChange={(event) =>
-                    setStatus(
-                      event.target.value as ChromebookStatus
-                    )
-                  }
-                  disabled={salvando || sucesso}
-                  className={inputClassName}
+                  className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#66666c] dark:text-gray-100 dark:hover:bg-[#55555b]"
                 >
-                  <option value="disponivel">
-                    Disponível — equipamento reserva
-                  </option>
-                  <option value="em-uso">
-                    Em uso — em operação
-                  </option>
-                  <option value="em-reparo">
-                    No reparo — enviado à assistência
-                  </option>
-                  <option value="para-descarte">
-                    Para descarte — fora de circulação
-                  </option>
-                </select>
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={salvando || sucesso}
+                  className="rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
+                >
+                  {sucesso
+                    ? "Atualizado!"
+                    : salvando
+                      ? "Salvando..."
+                      : "Salvar alterações"}
+                </button>
               </div>
-            </div>
-
-            <div className="mt-6">
-              <label
-                htmlFor="observacoes"
-                className={labelClassName}
-              >
-                Observações
-              </label>
-              <textarea
-                id="observacoes"
-                rows={4}
-                value={observacoes}
-                onChange={(event) =>
-                  setObservacoes(event.target.value)
-                }
-                placeholder="Informações adicionais sobre o equipamento..."
-                disabled={salvando || sucesso}
-                className={inputClassName}
-              />
-            </div>
-
-            <div className="mt-8 flex flex-col-reverse justify-end gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={voltar}
-                disabled={salvando || sucesso}
-                className="rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#66666c] dark:text-gray-100 dark:hover:bg-[#55555b]"
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="button"
-                onClick={salvarAlteracoes}
-                disabled={salvando || sucesso}
-                className="rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
-              >
-                {sucesso
-                  ? "Atualizado!"
-                  : salvando
-                    ? "Salvando..."
-                    : "Salvar alterações"}
-              </button>
-            </div>
+            </form>
           </div>
         ) : null}
       </div>

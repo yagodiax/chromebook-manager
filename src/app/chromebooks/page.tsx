@@ -28,9 +28,40 @@ export default function ChromebooksPage() {
     mensagem: string;
   } | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    setChromebooks(getChromebooks());
+    let ativo = true;
+
+    async function carregarChromebooks() {
+      try {
+        const dados = await getChromebooks();
+
+        if (ativo) {
+          setChromebooks(dados);
+        }
+      } catch (error) {
+        if (ativo) {
+          setNotificacao({
+            tipo: "erro",
+            mensagem:
+              error instanceof Error
+                ? error.message
+                : "Não foi possível carregar os Chromebooks.",
+          });
+        }
+      } finally {
+        if (ativo) {
+          setCarregando(false);
+        }
+      }
+    }
+
+    void carregarChromebooks();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   function abrirChromebook(id: string) {
@@ -45,7 +76,7 @@ export default function ChromebooksPage() {
     );
   }
 
-  function excluirChromebook(chromebook: Chromebook) {
+  async function excluirChromebook(chromebook: Chromebook) {
     if (excluindoId) return;
 
     const confirmado = window.confirm(
@@ -58,8 +89,11 @@ export default function ChromebooksPage() {
     setNotificacao(null);
 
     try {
-      deleteChromebook(chromebook.id);
-      setChromebooks(getChromebooks());
+      await deleteChromebook(chromebook.id);
+
+      setChromebooks((atuais) =>
+        atuais.filter((item) => item.id !== chromebook.id)
+      );
 
       setNotificacao({
         tipo: "sucesso",
@@ -425,11 +459,11 @@ export default function ChromebooksPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Exibindo{" "}
               <span className="font-bold text-slate-900 dark:text-white">
-                {chromebooksFiltrados.length}
+                {carregando ? "—" : chromebooksFiltrados.length}
               </span>{" "}
               de{" "}
               <span className="font-bold text-slate-900 dark:text-white">
-                {chromebooks.length}
+                {carregando ? "—" : chromebooks.length}
               </span>{" "}
               equipamentos
             </p>
@@ -460,11 +494,17 @@ export default function ChromebooksPage() {
 
             <span className="inline-flex w-fit items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:bg-[#333338] dark:text-slate-300">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              {chromebooksFiltrados.length} resultado(s)
+              {carregando ? "Carregando..." : `${chromebooksFiltrados.length} resultado(s)`}
             </span>
           </div>
 
-          {chromebooksFiltrados.length === 0 ? (
+          {carregando ? (
+            <div className="px-6 py-16 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Carregando equipamentos do banco de dados...
+              </p>
+            </div>
+          ) : chromebooksFiltrados.length === 0 ? (
             <div className="flex flex-col items-center px-6 py-16 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-[#333338] dark:text-slate-500">
                 <svg
@@ -607,7 +647,7 @@ export default function ChromebooksPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              excluirChromebook(chromebook)
+                              void excluirChromebook(chromebook)
                             }
                             disabled={excluindoId !== null}
                             className={`${botaoAcao} border border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-[#414147] dark:text-red-300 dark:hover:bg-red-950/50`}
@@ -625,7 +665,7 @@ export default function ChromebooksPage() {
             </div>
           )}
 
-          {chromebooksFiltrados.length > 0 && (
+          {!carregando && chromebooksFiltrados.length > 0 && (
             <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 sm:px-6 dark:border-[#55555b] dark:bg-[#39393f]">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Os indicadores consideram todos os equipamentos cadastrados,
