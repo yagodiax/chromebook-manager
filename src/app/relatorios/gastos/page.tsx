@@ -1,894 +1,101 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getChromebooks } from "@/lib/chromebooks";
-import { getManutencoes } from "@/lib/manutencoes";
-import type { Chromebook } from "@/types/chromebook";
-import type { Manutencao } from "@/types/manutencao";
 
 type Periodo = "7-dias" | "30-dias" | "6-meses" | "1-ano" | "todo";
-
-type ItemRanking = {
+type Registro = {
   id: string;
-  nome: string;
-  total: number;
-  quantidade: number;
+  equipamentoId: string;
+  equipamento: { patrimonio: string; tipo: string; fabricante: string; modelo: string; localizacao: string };
+  tipo: string;
+  categoria: string;
+  data: string;
+  descricao: string;
+  observacao: string;
+  custo: number;
+  destinoReparo: string;
+  resultado: string;
 };
+const TIPOS: Record<string, string> = { chromebook: "Chromebook", notebook: "Notebook", projetor: "Projetor", catraca: "Catraca", impressora: "Impressora" };
+const REGISTROS: Record<string, string> = { ocorrencia: "Ocorrência", manutencao: "Manutenção interna", "reposicao-de-peca": "Reposição de peça", "envio-para-reparo": "Envio para reparo", "retorno-de-reparo": "Retorno do reparo" };
+const card = "rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-[#505057] dark:bg-[#444449]";
+const campo = "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none dark:border-[#55555c] dark:bg-[#333338] dark:text-white";
 
-function formatarMoeda(valor: number): string {
-  return valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
-function formatarData(data: string): string {
-  if (!data) return "—";
-
-  const formatada = new Date(`${data}T00:00:00`);
-  if (Number.isNaN(formatada.getTime())) return data;
-
-  return formatada.toLocaleDateString("pt-BR");
-}
-
-function obterDataLocalISO(data = new Date()): string {
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, "0");
-  const dia = String(data.getDate()).padStart(2, "0");
-
-  return `${ano}-${mes}-${dia}`;
-}
-
-function obterDataLimite(periodo: Periodo): Date | null {
+function moeda(valor: number) { return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
+function dataBR(valor: string) { const partes = (valor || "").slice(0, 10).split("-"); return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : valor || "—"; }
+function limitePeriodo(periodo: Periodo): string | null {
   if (periodo === "todo") return null;
-
-  const limite = new Date();
-  limite.setHours(0, 0, 0, 0);
-
-  if (periodo === "7-dias") limite.setDate(limite.getDate() - 6);
-  else if (periodo === "30-dias") limite.setDate(limite.getDate() - 29);
-  else if (periodo === "6-meses") limite.setMonth(limite.getMonth() - 6);
-  else if (periodo === "1-ano") limite.setFullYear(limite.getFullYear() - 1);
-
-  return limite;
+  const data = new Date();
+  data.setHours(0, 0, 0, 0);
+  if (periodo === "7-dias") data.setDate(data.getDate() - 6);
+  else if (periodo === "30-dias") data.setDate(data.getDate() - 29);
+  else if (periodo === "6-meses") data.setMonth(data.getMonth() - 6);
+  else data.setFullYear(data.getFullYear() - 1);
+  return data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0") + "-" + String(data.getDate()).padStart(2, "0");
 }
-
-function nomeTipo(tipo: Manutencao["tipo"]): string {
-  const nomes: Record<Manutencao["tipo"], string> = {
-    ocorrencia: "Ocorrência",
-    manutencao: "Manutenção",
-    "reposicao-de-peca": "Reposição de peça",
-    "envio-para-reparo": "Envio para reparo",
-    "retorno-de-reparo": "Retorno de reparo",
-  };
-
-  return nomes[tipo] ?? tipo;
-}
-
-function nomeCategoria(categoria: Manutencao["categoria"]): string {
-  const nomes: Record<Manutencao["categoria"], string> = {
-    tela: "Tela",
-    teclado: "Teclado",
-    bateria: "Bateria",
-    carregador: "Carregador",
-    touchpad: "Touchpad",
-    "sistema-operacional": "Sistema operacional",
-    wifi: "Wi-Fi",
-    bluetooth: "Bluetooth",
-    audio: "Áudio",
-    camera: "Câmera",
-    carcaca: "Carcaça",
-    dobradica: "Dobradiça",
-    usb: "USB",
-    outro: "Outro",
-  };
-
-  return nomes[categoria] ?? categoria;
-}
-
-function escaparCSV(valor: string | number): string {
-  return `"${String(valor).replace(/"/g, '""')}"`;
-}
-
-function obterCustoContabilizavel(manutencao: Manutencao): number {
-  if (manutencao.tipo === "envio-para-reparo") return 0;
-
-  const custo = manutencao.custo;
-
-  if (
-    typeof custo !== "number" ||
-    !Number.isFinite(custo) ||
-    custo <= 0
-  ) {
-    return 0;
-  }
-
-  return custo;
-}
-
-const cardBase =
-  "rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm transition-colors dark:border-[#505057] dark:bg-[#444449]";
-
-const labelBase = "text-sm font-medium text-gray-500 dark:text-gray-400";
-
-const valorBase =
-  "mt-3 text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100";
-
-const selectBase =
-  "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200 dark:border-[#5a5a60] dark:bg-[#303034] dark:text-gray-100 dark:focus:ring-[#505057]";
+function csv(valor: string | number) { return '"' + String(valor).replace(/"/g, '""') + '"'; }
 
 export default function RelatorioGastosPage() {
-  const router = useRouter();
-
-  const [chromebooks, setChromebooks] = useState<Chromebook[]>([]);
-  const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
+  const [registros, setRegistros] = useState<Registro[]>([]);
   const [periodo, setPeriodo] = useState<Periodo>("30-dias");
   const [equipamentoId, setEquipamentoId] = useState("todos");
   const [carregando, setCarregando] = useState(true);
-  const [erroCarregamento, setErroCarregamento] = useState("");
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
-    let cancelado = false;
-
-    async function carregarDados() {
-      setCarregando(true);
-      setErroCarregamento("");
-
-      try {
-        const [listaChromebooks, listaManutencoes] = await Promise.all([
-          getChromebooks(),
-          getManutencoes(),
-        ]);
-
-        if (cancelado) return;
-
-        setChromebooks(listaChromebooks);
-        setManutencoes(listaManutencoes);
-      } catch (erro) {
-        console.error("Erro ao carregar relatório de gastos:", erro);
-
-        if (!cancelado) {
-          setErroCarregamento(
-            "Não foi possível carregar os dados do relatório. Verifique a conexão com o banco de dados e tente novamente."
-          );
-        }
-      } finally {
-        if (!cancelado) {
-          setCarregando(false);
-        }
-      }
-    }
-
-    void carregarDados();
-
-    return () => {
-      cancelado = true;
-    };
+    let ativo = true;
+    fetch("/api/historico-equipamentos", { cache: "no-store", credentials: "same-origin" })
+      .then(async (resposta) => {
+        const dados = await resposta.json().catch(() => []);
+        if (!resposta.ok) throw new Error(dados.erro || "Não foi possível carregar o relatório.");
+        if (ativo) setRegistros(Array.isArray(dados) ? dados : []);
+      })
+      .catch((e: unknown) => { if (ativo) setErro(e instanceof Error ? e.message : "Erro ao carregar relatório."); })
+      .finally(() => { if (ativo) setCarregando(false); });
+    return () => { ativo = false; };
   }, []);
 
-  const nomeChromebook = (id: string): string => {
-    const chromebook = chromebooks.find((item) => item.id === id);
+  const equipamentos = useMemo(() => {
+    const mapa = new Map<string, Registro["equipamento"]>();
+    registros.forEach((item) => mapa.set(item.equipamentoId, item.equipamento));
+    return Array.from(mapa.entries()).map(([id, equipamento]) => ({ id, equipamento }));
+  }, [registros]);
 
-    return chromebook
-      ? `${chromebook.numero} — ${chromebook.modelo}`
-      : id || "Equipamento não encontrado";
-  };
+  const filtrados = useMemo(() => {
+    const limite = limitePeriodo(periodo);
+    return registros.filter((item) => {
+      if (equipamentoId !== "todos" && item.equipamentoId !== equipamentoId) return false;
+      if (limite && item.data < limite) return false;
+      return true;
+    }).sort((a, b) => b.data.localeCompare(a.data));
+  }, [registros, periodo, equipamentoId]);
 
-  const manutencoesFiltradas = useMemo(() => {
-    const dataLimite = obterDataLimite(periodo);
-
-    return manutencoes
-      .filter((manutencao) => {
-        if (
-          equipamentoId !== "todos" &&
-          manutencao.chromebookId !== equipamentoId
-        ) {
-          return false;
-        }
-
-        const data = new Date(`${manutencao.data}T00:00:00`);
-
-        if (Number.isNaN(data.getTime())) return false;
-
-        return !dataLimite || data >= dataLimite;
-      })
-      .sort((a, b) => b.data.localeCompare(a.data));
-  }, [manutencoes, periodo, equipamentoId]);
-
-  const totalGasto = manutencoesFiltradas.reduce(
-    (total, manutencao) =>
-      total + obterCustoContabilizavel(manutencao),
-    0
-  );
-
-  const totalEnvios = manutencoesFiltradas.filter(
-    (item) => item.tipo === "envio-para-reparo"
-  ).length;
-
-  const totalRetornos = manutencoesFiltradas.filter(
-    (item) => item.tipo === "retorno-de-reparo"
-  ).length;
-
-  const registrosComCusto = manutencoesFiltradas.filter(
-    (item) => obterCustoContabilizavel(item) > 0
-  ).length;
-
-  const rankingGastos = useMemo(() => {
-    const agrupamento = new Map<string, ItemRanking>();
-
-    manutencoesFiltradas.forEach((manutencao) => {
-      const custo = obterCustoContabilizavel(manutencao);
-      if (custo <= 0) return;
-
-      const id = manutencao.chromebookId;
-      const existente = agrupamento.get(id);
-
-      if (existente) {
-        existente.total += custo;
-        existente.quantidade += 1;
-      } else {
-        agrupamento.set(id, {
-          id,
-          nome: nomeChromebook(id),
-          total: custo,
-          quantidade: 1,
-        });
-      }
-    });
-
-    return Array.from(agrupamento.values()).sort(
-      (a, b) => b.total - a.total
-    );
-  }, [manutencoesFiltradas, chromebooks]);
-
-  const maiorGastoRanking = rankingGastos[0]?.total ?? 0;
-
-  const gastosPorMes = useMemo(() => {
-    const agrupamento = new Map<string, number>();
-
-    const datasValidas = manutencoesFiltradas
-      .filter((item) => obterCustoContabilizavel(item) > 0)
-      .map((item) => item.data)
-      .filter(
-        (data) => !Number.isNaN(new Date(`${data}T00:00:00`).getTime())
-      )
-      .sort();
-
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    const dataLimite = obterDataLimite(periodo);
-
-    const primeiraData = datasValidas.length
-      ? new Date(`${datasValidas[0]}T00:00:00`)
-      : null;
-
-    const ultimaData = datasValidas.length
-      ? new Date(`${datasValidas[datasValidas.length - 1]}T00:00:00`)
-      : null;
-
-    const inicioBase = dataLimite ?? primeiraData ?? hoje;
-    const fimBase = ultimaData && ultimaData > hoje ? ultimaData : hoje;
-
-    const cursor = new Date(
-      inicioBase.getFullYear(),
-      inicioBase.getMonth(),
-      1
-    );
-
-    const fim = new Date(fimBase.getFullYear(), fimBase.getMonth(), 1);
-
-    while (cursor <= fim) {
-      const chave = `${cursor.getFullYear()}-${String(
-        cursor.getMonth() + 1
-      ).padStart(2, "0")}`;
-
-      agrupamento.set(chave, 0);
-      cursor.setMonth(cursor.getMonth() + 1);
-    }
-
-    manutencoesFiltradas.forEach((manutencao) => {
-      const custo = obterCustoContabilizavel(manutencao);
-      if (custo <= 0) return;
-
-      const data = new Date(`${manutencao.data}T00:00:00`);
-      if (Number.isNaN(data.getTime())) return;
-
-      const chave = `${data.getFullYear()}-${String(
-        data.getMonth() + 1
-      ).padStart(2, "0")}`;
-
-      if (agrupamento.has(chave)) {
-        agrupamento.set(chave, (agrupamento.get(chave) ?? 0) + custo);
-      }
-    });
-
-    return Array.from(agrupamento.entries()).map(([mes, total]) => {
-      const [ano, numeroMes] = mes.split("-").map(Number);
-
-      return {
-        mes,
-        nome: new Date(ano, numeroMes - 1, 1).toLocaleDateString("pt-BR", {
-          month: "short",
-          year: "2-digit",
-        }),
-        total,
-      };
-    });
-  }, [manutencoesFiltradas, periodo]);
-
-  const maiorGastoMensal = Math.max(
-    ...gastosPorMes.map((item) => item.total),
-    1
-  );
-
-  const totalGastoNoGrafico = gastosPorMes.reduce(
-    (total, item) => total + item.total,
-    0
-  );
+  const total = filtrados.filter((item) => item.tipo === "retorno-de-reparo").reduce((soma, item) => soma + (Number(item.custo) || 0), 0);
+  const envios = filtrados.filter((item) => item.tipo === "envio-para-reparo").length;
+  const retornos = filtrados.filter((item) => item.tipo === "retorno-de-reparo").length;
 
   function exportarCSV() {
-    const cabecalho = [
-      "Data",
-      "ID da manutenção",
-      "ID do Chromebook",
-      "Chromebook",
-      "Tipo",
-      "Categoria",
-      "Descrição",
-      "Observação",
-      "Destino do reparo",
-      "Resultado",
-      "Responsável",
-      "Custo registrado (R$)",
-      "Custo contabilizado (R$)",
-    ];
-
-    const linhas = manutencoesFiltradas.map((manutencao) => [
-      formatarData(manutencao.data),
-      manutencao.id,
-      manutencao.chromebookId,
-      nomeChromebook(manutencao.chromebookId),
-      nomeTipo(manutencao.tipo),
-      nomeCategoria(manutencao.categoria),
-      manutencao.descricao || "",
-      manutencao.observacao || "",
-      manutencao.destinoReparo || "",
-      manutencao.resultado || "",
-      manutencao.quemRealizou || "",
-      typeof manutencao.custo === "number" &&
-      Number.isFinite(manutencao.custo)
-        ? manutencao.custo.toFixed(2).replace(".", ",")
-        : "",
-      obterCustoContabilizavel(manutencao).toFixed(2).replace(".", ","),
-    ]);
-
-    const conteudo = [cabecalho, ...linhas]
-      .map((linha) => linha.map(escaparCSV).join(";"))
-      .join("\r\n");
-
-    const arquivo = new Blob(["\uFEFF", conteudo], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(arquivo);
+    const cabecalho = ["Data", "ID do registro", "ID do equipamento", "Patrimônio", "Tipo de equipamento", "Fabricante", "Modelo", "Localização", "Registro", "Categoria", "Descrição", "Destino do reparo", "Resultado", "Custo (R$)"];
+    const linhas = filtrados.map((item) => [dataBR(item.data), item.id, item.equipamentoId, item.equipamento.patrimonio, TIPOS[item.equipamento.tipo] || item.equipamento.tipo, item.equipamento.fabricante, item.equipamento.modelo, item.equipamento.localizacao, REGISTROS[item.tipo] || item.tipo, item.categoria, item.descricao, item.destinoReparo, item.resultado, item.tipo === "retorno-de-reparo" ? (Number(item.custo) || 0).toFixed(2).replace(".", ",") : ""]);
+    const texto = [cabecalho, ...linhas].map((linha) => linha.map(csv).join(";")).join("\r\n");
+    const blob = new Blob(["\uFEFF", texto], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-
     link.href = url;
-    link.download = `relatorio-gastos-${periodo}-${obterDataLocalISO()}.csv`;
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    link.download = "relatorio-gastos-" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-5 transition-colors sm:p-8 dark:bg-[#303035]">
-      <div className="mx-auto max-w-[1500px] space-y-6">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-          >
-            <span className="transition-transform group-hover:-translate-x-1">
-              ←
-            </span>
-            Voltar ao Dashboard
-          </button>
-        </div>
-
-        <header className="flex flex-col justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:p-8 dark:border-[#505057] dark:bg-[#444449]">
-          <div>
-            <div className="mb-3 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                Financeiro · Manutenção
-              </span>
-            </div>
-
-            <h1 className="text-3xl font-bold tracking-tight text-gray-950 sm:text-4xl dark:text-white">
-              Relatório de gastos
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-300">
-              Visão geral dos custos, reparos e despesas dos equipamentos da
-              escola.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={exportarCSV}
-            disabled={carregando || manutencoesFiltradas.length === 0}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-          >
-            <span aria-hidden="true">↓</span>
-            Exportar CSV para Excel
-          </button>
-        </header>
-
-        {erroCarregamento && (
-          <div
-            role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"
-          >
-            <p>{erroCarregamento}</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-3 rounded-lg bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        )}
-
-        {carregando ? (
-          <section className={cardBase}>
-            <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-300">
-              Carregando dados do relatório...
-            </p>
-          </section>
-        ) : (
-          <>
-            <section className={`${cardBase} p-5 sm:p-6`}>
-              <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Filtrar relatório
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Escolha o período e o equipamento que deseja analisar.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPeriodo("30-dias");
-                    setEquipamentoId("todos");
-                  }}
-                  className="self-start rounded-lg px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 sm:self-auto dark:text-gray-300 dark:hover:bg-[#303034] dark:hover:text-white"
-                >
-                  Limpar filtros
-                </button>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="periodo"
-                    className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
-                  >
-                    Período de análise
-                  </label>
-
-                  <select
-                    id="periodo"
-                    value={periodo}
-                    onChange={(event) =>
-                      setPeriodo(event.target.value as Periodo)
-                    }
-                    className={selectBase}
-                  >
-                    <option value="7-dias">Últimos 7 dias</option>
-                    <option value="30-dias">Últimos 30 dias</option>
-                    <option value="6-meses">Últimos 6 meses</option>
-                    <option value="1-ano">Último ano</option>
-                    <option value="todo">Todo o histórico</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="equipamento"
-                    className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
-                  >
-                    Equipamento
-                  </label>
-
-                  <select
-                    id="equipamento"
-                    value={equipamentoId}
-                    onChange={(event) => setEquipamentoId(event.target.value)}
-                    className={selectBase}
-                  >
-                    <option value="todos">Todos os Chromebooks</option>
-                    {chromebooks.map((chromebook) => (
-                      <option key={chromebook.id} value={chromebook.id}>
-                        {chromebook.numero} — {chromebook.modelo} (
-                        {chromebook.id})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span className="rounded-full bg-gray-100 px-3 py-1.5 dark:bg-[#303034]">
-                  {periodo === "7-dias"
-                    ? "Últimos 7 dias"
-                    : periodo === "30-dias"
-                      ? "Últimos 30 dias"
-                      : periodo === "6-meses"
-                        ? "Últimos 6 meses"
-                        : periodo === "1-ano"
-                          ? "Último ano"
-                          : "Todo o histórico"}
-                </span>
-
-                <span className="rounded-full bg-gray-100 px-3 py-1.5 dark:bg-[#303034]">
-                  {equipamentoId === "todos"
-                    ? "Todos os equipamentos"
-                    : nomeChromebook(equipamentoId)}
-                </span>
-
-                <span>
-                  {manutencoesFiltradas.length} registro(s) encontrado(s)
-                </span>
-              </div>
-            </section>
-
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className={cardBase}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={labelBase}>Total gasto</p>
-                    <p className={valorBase}>{formatarMoeda(totalGasto)}</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    R$
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  Custos contabilizados no período
-                </p>
-              </div>
-
-              <div className={cardBase}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={labelBase}>Registros encontrados</p>
-                    <p className={valorBase}>
-                      {manutencoesFiltradas.length}
-                    </p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                    #
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  Ocorrências, manutenções e reparos
-                </p>
-              </div>
-
-              <div className={cardBase}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={labelBase}>Envios para reparo</p>
-                    <p className={valorBase}>{totalEnvios}</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-xl text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
-                    ↗
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  Registros de envio no período
-                </p>
-              </div>
-
-              <div className={cardBase}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className={labelBase}>Retornos de reparo</p>
-                    <p className={valorBase}>{totalRetornos}</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-xl text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-                    ↩
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  {registrosComCusto} registro(s) com custo contabilizado
-                </p>
-              </div>
-            </section>
-
-            <section className={cardBase}>
-              <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    Evolução dos gastos
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Comparação dos valores contabilizados mês a mês.
-                  </p>
-                </div>
-
-                <span className="w-fit rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 dark:bg-[#303034] dark:text-gray-300">
-                  {gastosPorMes.length} período(s)
-                </span>
-              </div>
-
-              {gastosPorMes.length === 0 ? (
-                <div className="rounded-xl bg-gray-50 px-4 py-12 text-center dark:bg-[#303034]">
-                  <p className="font-medium text-gray-700 dark:text-gray-200">
-                    Não há períodos para exibir.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="flex h-72 min-w-full items-stretch gap-3 border-b border-gray-200 pb-3 dark:border-[#5a5a60]">
-                    {gastosPorMes.map((item) => {
-                      const altura =
-                        item.total > 0
-                          ? Math.max(
-                              (item.total / maiorGastoMensal) * 100,
-                              3
-                            )
-                          : 0;
-
-                      return (
-                        <div
-                          key={item.mes}
-                          className="flex min-w-16 flex-1 flex-col items-center justify-end gap-3"
-                          title={`${item.nome}: ${formatarMoeda(item.total)}`}
-                        >
-                          <span className="whitespace-nowrap text-[11px] font-semibold text-gray-600 dark:text-gray-300">
-                            {item.total > 0
-                              ? formatarMoeda(item.total)
-                              : "—"}
-                          </span>
-
-                          <div className="flex min-h-0 w-full flex-1 items-end justify-center rounded-t-lg bg-gray-50 dark:bg-[#303034]">
-                            <div
-                              className="w-[65%] max-w-12 rounded-t-lg bg-gray-800 transition-all duration-300 dark:bg-gray-200"
-                              style={{ height: `${altura}%` }}
-                            />
-                          </div>
-
-                          <span className="whitespace-nowrap text-xs capitalize text-gray-500 dark:text-gray-400">
-                            {item.nome}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-5 flex flex-col gap-2 rounded-xl bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-[#303034]">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Total exibido no gráfico
-                </span>
-                <span className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {formatarMoeda(totalGastoNoGrafico)}
-                </span>
-              </div>
-            </section>
-
-            <section className={cardBase}>
-              <div className="mb-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  Ranking de gastos por Chromebook
-                </h2>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Equipamentos com maior custo contabilizado no período.
-                </p>
-              </div>
-
-              {rankingGastos.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 px-4 py-12 text-center dark:border-[#5a5a60]">
-                  <p className="font-semibold text-gray-700 dark:text-gray-200">
-                    Nenhum gasto registrado neste período.
-                  </p>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    O ranking aparecerá quando houver custos maiores que zero.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {rankingGastos.map((item, indice) => {
-                    const percentual =
-                      maiorGastoRanking > 0
-                        ? (item.total / maiorGastoRanking) * 100
-                        : 0;
-
-                    return (
-                      <div key={item.id}>
-                        <div className="mb-2 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-sm font-bold text-gray-700 dark:bg-[#303034] dark:text-gray-200">
-                              {String(indice + 1).padStart(2, "0")}
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
-                                {item.nome}
-                              </p>
-                              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                {item.quantidade} registro(s) com custo
-                              </p>
-                            </div>
-                          </div>
-
-                          <p className="text-base font-bold text-gray-900 dark:text-gray-100">
-                            {formatarMoeda(item.total)}
-                          </p>
-                        </div>
-
-                        <div className="h-2.5 overflow-hidden rounded-full bg-gray-100 dark:bg-[#303034]">
-                          <div
-                            className="h-full rounded-full bg-gray-800 transition-all duration-300 dark:bg-gray-200"
-                            style={{ width: `${percentual}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm dark:border-[#505057] dark:bg-[#444449]">
-              <div className="flex flex-col gap-3 border-b border-gray-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:border-[#5a5a60]">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                    Histórico de gastos
-                  </h2>
-                  <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-                    Os envios aparecem no histórico, mas não entram no total
-                    gasto. O custo contabilizado considera o valor final do
-                    retorno ou de uma manutenção com custo registrado.
-                  </p>
-                </div>
-
-                <span className="w-fit shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:bg-[#303034] dark:text-gray-300">
-                  {manutencoesFiltradas.length} registro(s)
-                </span>
-              </div>
-
-              {manutencoesFiltradas.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-xl dark:bg-[#303034]">
-                    —
-                  </div>
-                  <h3 className="mt-4 font-semibold text-gray-900 dark:text-gray-100">
-                    Nenhum registro encontrado
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">
-                    Altere o período ou selecione outro Chromebook.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1050px] border-collapse text-left">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-[#3d3d42]">
-                        {[
-                          "Data",
-                          "Equipamento",
-                          "Tipo / categoria",
-                          "Descrição",
-                          "Destino",
-                          "Resultado",
-                          "Custo contabilizado",
-                        ].map((titulo) => (
-                          <th
-                            key={titulo}
-                            className={`whitespace-nowrap px-5 py-4 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300 ${
-                              titulo === "Custo contabilizado"
-                                ? "text-right"
-                                : ""
-                            }`}
-                          >
-                            {titulo}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {manutencoesFiltradas.map((manutencao) => {
-                        const custo = obterCustoContabilizavel(manutencao);
-
-                        return (
-                          <tr
-                            key={manutencao.id}
-                            className="border-t border-gray-100 transition-colors hover:bg-gray-50/80 dark:border-[#505057] dark:hover:bg-[#3d3d42]"
-                          >
-                            <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                              {formatarData(manutencao.data)}
-                            </td>
-
-                            <td className="px-5 py-4 text-sm text-gray-900 dark:text-gray-100">
-                              <div className="font-semibold">
-                                {nomeChromebook(manutencao.chromebookId)}
-                              </div>
-                              <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                {manutencao.id}
-                              </div>
-                            </td>
-
-                            <td className="px-5 py-4 text-sm">
-                              <div className="font-medium text-gray-800 dark:text-gray-100">
-                                {nomeTipo(manutencao.tipo)}
-                              </div>
-                              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                {nomeCategoria(manutencao.categoria)}
-                              </div>
-                            </td>
-
-                            <td className="max-w-xs px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                              <div>{manutencao.descricao || "—"}</div>
-                              {manutencao.observacao && (
-                                <div className="mt-1 text-xs text-gray-400 dark:text-gray-400">
-                                  {manutencao.observacao}
-                                </div>
-                              )}
-                            </td>
-
-                            <td className="px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                              {manutencao.destinoReparo || "—"}
-                            </td>
-
-                            <td className="min-w-40 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
-                              {manutencao.resultado || "—"}
-                            </td>
-
-                            <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-bold text-gray-900 dark:text-gray-100">
-                              {custo > 0 ? formatarMoeda(custo) : "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-
-                    <tfoot>
-                      <tr className="border-t border-gray-200 bg-gray-50 dark:border-[#5a5a60] dark:bg-[#3d3d42]">
-                        <td
-                          colSpan={6}
-                          className="px-5 py-5 text-right text-sm font-semibold text-gray-600 dark:text-gray-300"
-                        >
-                          Total contabilizado no período
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-5 text-right text-base font-bold text-gray-950 dark:text-white">
-                          {formatarMoeda(totalGasto)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </section>
-          </>
-        )}
-
-        <p className="pb-3 text-center text-xs text-gray-400 dark:text-gray-500">
-          Chromebook Manager · Relatório financeiro de manutenção
-        </p>
+    <div className="min-h-screen bg-gray-100 p-5 sm:p-8 dark:bg-[#3a3a3f]">
+      <div className="mx-auto max-w-7xl">
+        <Link href="/" className="text-sm font-medium text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">← Voltar ao Dashboard</Link>
+        <header className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Financeiro · Inventário</p><h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">Relatório de gastos</h1><p className="mt-2 text-sm text-gray-600 dark:text-gray-300">Custos finais dos reparos externos de todas as categorias.</p></div><button type="button" onClick={exportarCSV} disabled={carregando || filtrados.length === 0} className="rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-gray-900">Exportar CSV para Excel ↓</button></header>
+        {erro && <div role="alert" className="mt-5 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{erro}</div>}
+        <section className={card + " mt-6"}><h2 className="font-semibold text-gray-900 dark:text-white">Filtros</h2><div className="mt-4 grid gap-4 sm:grid-cols-2"><div><label htmlFor="periodo" className="mb-2 block text-sm text-gray-600 dark:text-gray-300">Período</label><select id="periodo" className={campo} value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}><option value="7-dias">Últimos 7 dias</option><option value="30-dias">Últimos 30 dias</option><option value="6-meses">Últimos 6 meses</option><option value="1-ano">Último ano</option><option value="todo">Todo o histórico</option></select></div><div><label htmlFor="equipamento" className="mb-2 block text-sm text-gray-600 dark:text-gray-300">Equipamento</label><select id="equipamento" className={campo} value={equipamentoId} onChange={(e) => setEquipamentoId(e.target.value)}><option value="todos">Todos os equipamentos</option>{equipamentos.map(({ id, equipamento }) => <option key={id} value={id}>{equipamento.patrimonio || id} · {TIPOS[equipamento.tipo] || equipamento.tipo} · {equipamento.modelo}</option>)}</select></div></div></section>
+        <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{ nome: "Total gasto em reparos", valor: moeda(total), descricao: "Somente custos finais registrados no retorno" }, { nome: "Registros no período", valor: String(filtrados.length), descricao: "Ocorrências, manutenções e reparos" }, { nome: "Envios para reparo", valor: String(envios), descricao: "Envios à assistência técnica" }, { nome: "Retornos de reparo", valor: String(retornos), descricao: "Retornos com resultado e custo" }].map((item) => <div key={item.nome} className={card}><p className="text-sm text-gray-500 dark:text-gray-400">{item.nome}</p><p className="mt-3 text-2xl font-bold text-gray-950 dark:text-white">{carregando ? "—" : item.valor}</p><p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{item.descricao}</p></div>)}</section>
+        <section className={card + " mt-5"}><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold text-gray-950 dark:text-white">Histórico financeiro</h2><span className="text-sm text-gray-500 dark:text-gray-400">{filtrados.length} registro(s)</span></div>{carregando ? <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-300">Carregando relatório...</p> : filtrados.length === 0 ? <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-300">Nenhum registro encontrado para esses filtros.</p> : <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[950px] text-left text-sm"><thead className="border-b border-gray-200 text-xs uppercase text-gray-500 dark:border-[#55555c] dark:text-gray-400"><tr>{["Data", "Equipamento", "Tipo de registro", "Descrição", "Assistência", "Custo contabilizado"].map((titulo) => <th key={titulo} className="px-4 py-3">{titulo}</th>)}</tr></thead><tbody className="divide-y divide-gray-100 dark:divide-[#55555c]">{filtrados.map((item) => <tr key={item.id}><td className="whitespace-nowrap px-4 py-4">{dataBR(item.data)}</td><td className="px-4 py-4"><p className="font-semibold text-gray-900 dark:text-white">{item.equipamento.patrimonio || item.equipamento.tipo}</p><p className="text-xs text-gray-500 dark:text-gray-400">{[item.equipamento.fabricante, item.equipamento.modelo].filter(Boolean).join(" ")}</p></td><td className="px-4 py-4">{REGISTROS[item.tipo] || item.tipo}</td><td className="max-w-sm px-4 py-4">{item.descricao}</td><td className="px-4 py-4">{item.destinoReparo || "—"}</td><td className="whitespace-nowrap px-4 py-4 font-semibold">{item.tipo === "retorno-de-reparo" ? moeda(Number(item.custo) || 0) : "—"}</td></tr>)}</tbody><tfoot><tr className="border-t border-gray-200 dark:border-[#55555c]"><td colSpan={5} className="px-4 py-4 text-right font-semibold">Total gasto</td><td className="px-4 py-4 font-bold">{moeda(total)}</td></tr></tfoot></table></div>}</section>
       </div>
     </div>
   );
