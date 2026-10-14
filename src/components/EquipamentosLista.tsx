@@ -114,7 +114,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                     {tipoFiltro === "chromebook" ? (
                       <><th className={th}>Chromebook</th><th className={th}>MAC</th><th className={th}>Saúde da bateria</th><th className={th}>Localização</th></>
                     ) : (
-                      <><th className={th}>Equipamento</th><th className={th}>Modelo</th><th className={th}>Localização</th>{tipoFiltro === "projetor" && <th className={th}>Potência</th>}</>
+                      <><th className={th}>Equipamento</th><th className={th}>MAC</th><th className={th}>Localização</th>{tipoFiltro === "projetor" && <th className={th}>Potência</th>}</>
                     )}
                     <th className={th}>Status</th>
                     <th className={th + " text-right"}>Ações</th>
@@ -132,7 +132,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                             <p className="font-semibold text-gray-900 dark:text-gray-100">Nº {String(item.detalhes?.numeroChromebook ?? item.patrimonio.replace("CHROME-", ""))}</p>
                             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{item.observacoes || item.id}</p>
                           </td>
-                          <td className={td + " whitespace-nowrap font-mono text-xs"}>{String(item.detalhes?.mac ?? "—")}</td>
+                          <td className={td}>{[item.fabricante, item.modelo].filter(Boolean).join(" ") || String(item.detalhes?.codigoModelo ?? "—")}</td>
                           <td className={td + " whitespace-nowrap"}>{item.detalhes?.saudeBateria == null || item.detalhes?.saudeBateria === "" ? "—" : `${String(item.detalhes.saudeBateria)}%`}</td>
                           <td className={td}>{item.localizacao || "—"}</td>
                         </>
@@ -148,7 +148,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                               {item.tipo === "chromebook" ? `MAC: ${String(item.detalhes?.mac ?? "—")}` : item.id}
                             </p>
                           </td>
-                          <td className={td}>{[item.fabricante, item.modelo].filter(Boolean).join(" ") || "—"}</td>
+                          <td className={td}>{item.tipo === "chromebook" ? String(item.detalhes?.mac ?? "—") : [item.fabricante, item.modelo].filter(Boolean).join(" ") || "—"}</td>
                           <td className={td}>{item.localizacao || "—"}</td>
                           {tipoFiltro === "projetor" && <td className={td + " whitespace-nowrap"}>{String(item.detalhes?.potencia ?? "—")}{item.detalhes?.potenciaFicticia === true ? <span className="ml-1 text-xs text-amber-700 dark:text-amber-300">(fictícia)</span> : null}</td>}
                         </>
