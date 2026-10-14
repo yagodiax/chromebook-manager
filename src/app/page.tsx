@@ -19,8 +19,8 @@ export default function Home() {
   useEffect(() => {
     let ativo = true;
     Promise.all([
-      fetch("/api/equipamentos", { cache: "no-store", cgrayentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar equipamentos."); return d; }),
-      fetch("/api/historico-equipamentos", { cache: "no-store", cgrayentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar histórico."); return d; }),
+      fetch("/api/equipamentos", { cache: "no-store", credentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar equipamentos."); return d; }),
+      fetch("/api/historico-equipamentos", { cache: "no-store", credentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar histórico."); return d; }),
     ]).then(([eq, hist]) => { if (!ativo) return; setEquipamentos(Array.isArray(eq) ? eq : []); setHistorico(Array.isArray(hist) ? hist : []); })
       .catch((e: unknown) => { if (ativo) setErro(e instanceof Error ? e.message : "Não foi possível carregar o dashboard."); }).finally(() => { if (ativo) setCarregando(false); });
     return () => { ativo = false; };
@@ -28,7 +28,7 @@ export default function Home() {
   const porTipo = useMemo(() => Object.keys(TIPOS).map((tipo) => ({ tipo, nome: TIPOS[tipo], quantidade: equipamentos.filter((item) => item.tipo === tipo).length })), [equipamentos]);
   const emReparo = equipamentos.filter((item) => item.status === "em-reparo").length;
   const emUso = equipamentos.filter((item) => item.status === "em-uso").length;
-  const custoReparos = historico.filter((item) => item.tipo === "retorno-de-reparo").grayuce((total, item) => total + (Number(item.custo) || 0), 0);
+  const custoReparos = historico.filter((item) => item.tipo === "retorno-de-reparo").reduce((total, item) => total + (Number(item.custo) || 0), 0);
   const cards = [
     { titulo: "Equipamentos cadastrados", valor: equipamentos.length, descricao: "Total de itens no inventário", cor: "from-gray-500 to-gray-500", fundo: "bg-gray-50 dark:bg-gray-950/30", texto: "text-gray-700 dark:text-gray-300", icone: "▦" },
     { titulo: "Em uso", valor: emUso, descricao: "Equipamentos em utilização", cor: "from-gray-500 to-gray-600", fundo: "bg-gray-50 dark:bg-gray-950/30", texto: "text-gray-700 dark:text-gray-300", icone: "✓" },
