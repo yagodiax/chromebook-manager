@@ -73,10 +73,10 @@ export default function RelatorioGastosPage() {
       const data = new Date(agora.getFullYear(), agora.getMonth() - (5 - indice), 1);
       const chave = data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0");
       const nome = data.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-      const valor = filtrados.filter((item) => item.tipo === "retorno-de-reparo" && (item.data || "").slice(0, 7) === chave).reduce((soma, item) => soma + (Number(item.custo) || 0), 0);
+      const valor = registros.filter((item) => (equipamentoId === "todos" || item.equipamentoId === equipamentoId) && item.tipo === "retorno-de-reparo" && (item.data || "").slice(0, 7) === chave).reduce((soma, item) => soma + (Number(item.custo) || 0), 0);
       return { chave, nome: nome.charAt(0).toUpperCase() + nome.slice(1), valor };
     });
-  }, [filtrados]);
+  }, [registros, equipamentoId]);
   const maxMes = Math.max(...meses.map((m) => m.valor), 1);
 
   const ranking = useMemo(() => {
