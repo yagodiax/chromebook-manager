@@ -4,20 +4,24 @@
 
 :root {
   color-scheme: light;
-  --background: #e4e4e7;
-  --foreground: #18181b;
-  --surface: #fafafa;
-  --border: #c4c4cc;
-  --muted: #52525b;
+  --background: #eeeeee;
+  --foreground: #262626;
+  --surface: #f7f7f7;
+  --surface-muted: #e5e5e5;
+  --border: #d0d0d0;
+  --muted: #666666;
+  --sidebar: #e2e2e2;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #27272a;
-  --foreground: #f4f4f5;
-  --surface: #3f3f46;
-  --border: #52525b;
-  --muted: #a1a1aa;
+  --background: #303030;
+  --foreground: #eeeeee;
+  --surface: #393939;
+  --surface-muted: #444444;
+  --border: #555555;
+  --muted: #bdbdbd;
+  --sidebar: #292929;
 }
 
 @theme inline {
@@ -35,67 +39,111 @@ body {
   color: var(--foreground);
 }
 
-/* Paleta neutra, com contraste maior no modo claro sem alterar fontes ou efeitos. */
+/* Identidade visual neutra e consistente em todas as páginas. */
+aside {
+  background-color: var(--sidebar) !important;
+  color: var(--foreground);
+  border-color: var(--border) !important;
+}
+.dark aside { background-color: var(--sidebar) !important; }
+aside > div:first-child {
+  background: var(--sidebar) !important;
+  border-color: var(--border) !important;
+}
+aside a[aria-current="page"] {
+  background: var(--surface-muted) !important;
+  background-image: none !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+  box-shadow: none !important;
+}
+aside a[aria-current="page"] span { color: var(--foreground) !important; }
+aside a, aside button { transition: background-color .15s ease, color .15s ease; }
+aside a:hover, aside button:hover {
+  background: var(--surface-muted) !important;
+  color: var(--foreground) !important;
+}
+aside [class*="bg-gradient"] {
+  background: var(--surface-muted) !important;
+  color: var(--foreground) !important;
+  box-shadow: none !important;
+}
+aside [class*="text-teal-"], aside [class*="text-cyan-"],
+aside [class*="text-violet-"], aside [class*="text-indigo-"],
+aside [class*="text-rose-"], aside [class*="text-red-"] {
+  color: var(--foreground) !important;
+}
+
+/* Neutraliza cores decorativas antigas sem mudar a estrutura nem as funções. */
+[class*="bg-gradient"] {
+  background-image: none !important;
+  box-shadow: none;
+}
 [class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
 [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-amber-"],
 [class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-red-"], [class*="bg-rose-"],
 [class*="bg-pink-"], [class*="bg-fuchsia-"], [class*="bg-purple-"], [class*="bg-violet-"],
-[class*="bg-indigo-"] {
-  background-color: #d4d4d8 !important;
+[class*="bg-indigo-"], [class*="bg-teal/"], [class*="bg-cyan/"], [class*="bg-sky/"],
+[class*="bg-blue/"], [class*="bg-emerald/"], [class*="bg-green/"], [class*="bg-amber/"],
+[class*="bg-orange/"], [class*="bg-red/"], [class*="bg-rose/"], [class*="bg-purple/"],
+[class*="bg-violet/"], [class*="bg-indigo/"], [class*="bg-[#"] {
+  background-color: var(--surface-muted) !important;
   background-image: none !important;
 }
-.dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"], .dark [class*="bg-blue-"],
-.dark [class*="bg-emerald-"], .dark [class*="bg-green-"], .dark [class*="bg-lime-"], .dark [class*="bg-amber-"],
-.dark [class*="bg-yellow-"], .dark [class*="bg-orange-"], .dark [class*="bg-red-"], .dark [class*="bg-rose-"],
-.dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"], .dark [class*="bg-violet-"],
-.dark [class*="bg-indigo-"] {
-  background-color: #3f3f46 !important;
-  background-image: none !important;
+.dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"],
+.dark [class*="bg-blue-"], .dark [class*="bg-emerald-"], .dark [class*="bg-green-"],
+.dark [class*="bg-lime-"], .dark [class*="bg-amber-"], .dark [class*="bg-yellow-"],
+.dark [class*="bg-orange-"], .dark [class*="bg-red-"], .dark [class*="bg-rose-"],
+.dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"],
+.dark [class*="bg-violet-"], .dark [class*="bg-indigo-"], .dark [class*="bg-[#"] {
+  background-color: var(--surface) !important;
 }
-
-[class*="from-teal-"], [class*="from-cyan-"], [class*="from-sky-"], [class*="from-blue-"],
-[class*="from-emerald-"], [class*="from-green-"], [class*="from-lime-"], [class*="from-amber-"],
-[class*="from-yellow-"], [class*="from-orange-"], [class*="from-red-"], [class*="from-rose-"],
-[class*="from-pink-"], [class*="from-fuchsia-"], [class*="from-purple-"], [class*="from-violet-"],
-[class*="from-indigo-"] {
-  background-image: none !important;
-  background-color: #d4d4d8 !important;
+[class*="from-"], [class*="via-"], [class*="to-"] {
+  --tw-gradient-from: transparent !important;
+  --tw-gradient-to: transparent !important;
+  --tw-gradient-stops: transparent !important;
 }
-.dark [class*="from-teal-"], .dark [class*="from-cyan-"], .dark [class*="from-sky-"], .dark [class*="from-blue-"],
-.dark [class*="from-emerald-"], .dark [class*="from-green-"], .dark [class*="from-lime-"], .dark [class*="from-amber-"],
-.dark [class*="from-yellow-"], .dark [class*="from-orange-"], .dark [class*="from-red-"], .dark [class*="from-rose-"],
-.dark [class*="from-pink-"], .dark [class*="from-fuchsia-"], .dark [class*="from-purple-"], .dark [class*="from-violet-"],
-.dark [class*="from-indigo-"] {
-  background-color: #3f3f46 !important;
-}
-
 [class*="text-teal-"], [class*="text-cyan-"], [class*="text-sky-"], [class*="text-blue-"],
 [class*="text-emerald-"], [class*="text-green-"], [class*="text-lime-"], [class*="text-amber-"],
 [class*="text-yellow-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-rose-"],
 [class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-purple-"], [class*="text-violet-"],
-[class*="text-indigo-"] {
-  color: #3f3f46 !important;
-}
-.dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"], .dark [class*="text-blue-"],
-.dark [class*="text-emerald-"], .dark [class*="text-green-"], .dark [class*="text-lime-"], .dark [class*="text-amber-"],
-.dark [class*="text-yellow-"], .dark [class*="text-orange-"], .dark [class*="text-red-"], .dark [class*="text-rose-"],
-.dark [class*="text-pink-"], .dark [class*="text-fuchsia-"], .dark [class*="text-purple-"], .dark [class*="text-violet-"],
-.dark [class*="text-indigo-"] {
-  color: #d4d4d8 !important;
-}
-
+[class*="text-indigo-"] { color: #525252 !important; }
+.dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"],
+.dark [class*="text-blue-"], .dark [class*="text-emerald-"], .dark [class*="text-green-"],
+.dark [class*="text-lime-"], .dark [class*="text-amber-"], .dark [class*="text-yellow-"],
+.dark [class*="text-orange-"], .dark [class*="text-red-"], .dark [class*="text-rose-"],
+.dark [class*="text-pink-"], .dark [class*="text-fuchsia-"], .dark [class*="text-purple-"],
+.dark [class*="text-violet-"], .dark [class*="text-indigo-"] { color: #d4d4d4 !important; }
 [class*="border-teal-"], [class*="border-cyan-"], [class*="border-sky-"], [class*="border-blue-"],
 [class*="border-emerald-"], [class*="border-green-"], [class*="border-lime-"], [class*="border-amber-"],
 [class*="border-yellow-"], [class*="border-orange-"], [class*="border-red-"], [class*="border-rose-"],
 [class*="border-pink-"], [class*="border-fuchsia-"], [class*="border-purple-"], [class*="border-violet-"],
-[class*="border-indigo-"] {
+[class*="border-indigo-"], [class*="border-[#"] { border-color: var(--border) !important; }
+
+/* Painéis, campos e tabelas seguem o mesmo padrão neutro. */
+[class*="bg-white"] { background-color: var(--surface) !important; }
+.dark [class*="dark:bg-white"] { background-color: var(--surface) !important; }
+[class*="bg-gray-100"], [class*="bg-slate-50"], [class*="bg-gray-50"] {
+  background-color: var(--background) !important;
+}
+.dark [class*="dark:bg-gray-100"], .dark [class*="dark:bg-slate-50"],
+.dark [class*="dark:bg-gray-50"] { background-color: var(--background) !important; }
+[class*="border-white"] { border-color: var(--border) !important; }
+[class*="hover:bg-teal-"]:hover, [class*="hover:bg-cyan-"]:hover,
+[class*="hover:bg-sky-"]:hover, [class*="hover:bg-blue-"]:hover,
+[class*="hover:bg-emerald-"]:hover, [class*="hover:bg-green-"]:hover,
+[class*="hover:bg-amber-"]:hover, [class*="hover:bg-red-"]:hover,
+[class*="hover:bg-violet-"]:hover, [class*="hover:bg-rose-"]:hover {
+  background-color: var(--surface-muted) !important;
+}
+input, select, textarea {
+  background-color: var(--surface) !important;
+  color: var(--foreground) !important;
   border-color: var(--border) !important;
 }
-
 input:focus-visible, select:focus-visible, textarea:focus-visible,
 button:focus-visible, a:focus-visible {
-  outline-color: #71717a;
+  outline-color: #777777;
   outline-offset: 2px;
 }
-
-::placeholder { color: #71717a; }
+::placeholder { color: var(--muted); }
