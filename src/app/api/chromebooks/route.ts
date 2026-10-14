@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { obterUsuarioAutenticado } from "@/lib/auth";
@@ -17,7 +18,7 @@ type StatusChromebook = (typeof STATUS_VALIDOS)[number];
 
 type ChromebookDados = {
   numero: string;
-  mac: string;
+  mac: string | null;
   numeroSerie: string;
   modelo: string;
   sala: string;
@@ -28,7 +29,7 @@ type ChromebookDados = {
 type ChromebookRow = RowDataPacket & {
   id: string;
   numero: string | null;
-  mac: string;
+  mac: string | null;
   numeroSerie: string | null;
   modelo: string | null;
   sala: string | null;
@@ -85,9 +86,10 @@ function validarDados(body: unknown): {
 
   const macOriginal = String(entrada.mac ?? "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/-/g, ":");
 
-  const mac = macOriginal.replace(/-/g, ":");
+  const mac = macOriginal || null;
 
   const numeroSerie = String(
     entrada.numeroSerie ?? ""
@@ -95,6 +97,7 @@ function validarDados(body: unknown): {
 
   const modelo = String(entrada.modelo ?? "").trim();
   const sala = String(entrada.sala ?? "").trim();
+
   const observacoes = String(
     entrada.observacoes ?? ""
   ).trim();
@@ -103,7 +106,11 @@ function validarDados(body: unknown): {
     entrada.status ?? "disponivel"
   );
 
-  if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac)) {
+  // O MAC só é validado quando informado.
+  if (
+    mac !== null &&
+    !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(mac)
+  ) {
     return {
       erro:
         "Informe um MAC válido, por exemplo: AA:BB:CC:DD:EE:FF.",
@@ -128,8 +135,7 @@ function validarDados(body: unknown): {
     observacoes.length > 60000
   ) {
     return {
-      erro:
-        "Um ou mais campos excedem o tamanho permitido.",
+      erro: "Um ou mais campos excedem o tamanho permitido.",
     };
   }
 

@@ -36,33 +36,12 @@ export default function NovoChromebookPage() {
     if (salvando) return;
 
     setErro("");
-
-    if (
-      !numero.trim() ||
-      !mac.trim() ||
-      !numeroSerie.trim() ||
-      !modelo.trim() ||
-      !sala.trim()
-    ) {
-      setErro(
-        "Preencha Número, MAC, Número de série, Modelo e Sala."
-      );
-      return;
-    }
-
-    if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(mac)) {
-      setErro(
-        "O MAC precisa conter 12 caracteres hexadecimais, no formato AA:BB:CC:DD:EE:FF."
-      );
-      return;
-    }
-
     setSalvando(true);
 
     try {
       await saveChromebook({
         numero: numero.trim(),
-        mac: mac.toUpperCase(),
+        mac: mac.trim().toUpperCase(),
         numeroSerie: numeroSerie.trim(),
         modelo: modelo.trim(),
         sala: sala.trim(),
@@ -120,6 +99,7 @@ export default function NovoChromebookPage() {
 
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
               O ID permanente será gerado automaticamente pelo sistema.
+              Todos os campos de identificação são opcionais.
             </p>
           </div>
 
@@ -147,7 +127,6 @@ export default function NovoChromebookPage() {
                 value={numero}
                 onChange={(event) => setNumero(event.target.value)}
                 placeholder="Ex.: 001"
-                required
                 maxLength={50}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
@@ -170,7 +149,6 @@ export default function NovoChromebookPage() {
                 }
                 placeholder="AA:BB:CC:DD:EE:FF"
                 maxLength={17}
-                required
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
             </div>
@@ -191,7 +169,6 @@ export default function NovoChromebookPage() {
                   setNumeroSerie(event.target.value)
                 }
                 placeholder="Número de série do equipamento"
-                required
                 maxLength={100}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
@@ -211,7 +188,6 @@ export default function NovoChromebookPage() {
                 value={modelo}
                 onChange={(event) => setModelo(event.target.value)}
                 placeholder="Ex.: Acer Chromebook 311"
-                required
                 maxLength={150}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
@@ -231,7 +207,6 @@ export default function NovoChromebookPage() {
                 value={sala}
                 onChange={(event) => setSala(event.target.value)}
                 placeholder="Ex.: Sala 203 ou Reserva"
-                required
                 maxLength={100}
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 dark:border-[#606066] dark:bg-[#303034] dark:text-gray-100 dark:placeholder:text-gray-500"
               />
