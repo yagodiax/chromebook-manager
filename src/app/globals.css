@@ -89,6 +89,7 @@ aside [class*="text-rose-"], aside [class*="text-red-"] {
 [class*="bg-violet/"], [class*="bg-indigo/"], [class*="bg-[#"] {
   background-color: var(--surface-muted) !important;
   background-image: none !important;
+  color: var(--foreground) !important;
 }
 .dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"],
 .dark [class*="bg-blue-"], .dark [class*="bg-emerald-"], .dark [class*="bg-green-"],
@@ -97,6 +98,7 @@ aside [class*="text-rose-"], aside [class*="text-red-"] {
 .dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"],
 .dark [class*="bg-violet-"], .dark [class*="bg-indigo-"], .dark [class*="bg-[#"] {
   background-color: var(--surface) !important;
+  color: var(--foreground) !important;
 }
 [class*="from-"], [class*="via-"], [class*="to-"] {
   --tw-gradient-from: transparent !important;
