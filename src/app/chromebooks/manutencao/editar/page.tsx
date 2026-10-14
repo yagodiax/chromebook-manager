@@ -817,7 +817,7 @@ function EditarManutencaoConteudo() {
                 type="button"
                 disabled={salvando || adicionandoAnexos}
                 onClick={salvar}
-                className="rounded-lg bg-gray-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#f4f4f5] dark:text-gray-900 dark:hover:bg-white"
+                className="rounded-lg border border-[#9a6b00] bg-[#e0b43d] px-5 py-3 text-sm font-bold text-[#211b0e] shadow-sm transition hover:bg-[#f0c94e] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#e0b43d] dark:bg-[#e0b43d] dark:text-[#211b0e] dark:hover:bg-[#f0c94e]"
               >
                 {salvando ? "Salvando..." : "Salvar alterações"}
               </button>
