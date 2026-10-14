@@ -4,11 +4,11 @@
 
 :root {
   color-scheme: light;
-  --background: #f5f5f5;
-  --foreground: #27272a;
-  --surface: #ffffff;
-  --border: #e4e4e7;
-  --muted: #71717a;
+  --background: #e4e4e7;
+  --foreground: #18181b;
+  --surface: #fafafa;
+  --border: #c4c4cc;
+  --muted: #52525b;
 }
 
 .dark {
@@ -35,13 +35,13 @@ body {
   color: var(--foreground);
 }
 
-/* Paleta simples: cinza, branco e preto, sem alterar a tipografia dos componentes. */
+/* Paleta neutra, com contraste maior no modo claro sem alterar fontes ou efeitos. */
 [class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
 [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-amber-"],
 [class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-red-"], [class*="bg-rose-"],
 [class*="bg-pink-"], [class*="bg-fuchsia-"], [class*="bg-purple-"], [class*="bg-violet-"],
 [class*="bg-indigo-"] {
-  background-color: #f4f4f5 !important;
+  background-color: #d4d4d8 !important;
   background-image: none !important;
 }
 .dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"], .dark [class*="bg-blue-"],
@@ -59,7 +59,7 @@ body {
 [class*="from-pink-"], [class*="from-fuchsia-"], [class*="from-purple-"], [class*="from-violet-"],
 [class*="from-indigo-"] {
   background-image: none !important;
-  background-color: #e4e4e7 !important;
+  background-color: #d4d4d8 !important;
 }
 .dark [class*="from-teal-"], .dark [class*="from-cyan-"], .dark [class*="from-sky-"], .dark [class*="from-blue-"],
 .dark [class*="from-emerald-"], .dark [class*="from-green-"], .dark [class*="from-lime-"], .dark [class*="from-amber-"],
@@ -74,7 +74,7 @@ body {
 [class*="text-yellow-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-rose-"],
 [class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-purple-"], [class*="text-violet-"],
 [class*="text-indigo-"] {
-  color: #52525b !important;
+  color: #3f3f46 !important;
 }
 .dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"], .dark [class*="text-blue-"],
 .dark [class*="text-emerald-"], .dark [class*="text-green-"], .dark [class*="text-lime-"], .dark [class*="text-amber-"],
@@ -94,8 +94,8 @@ body {
 
 input:focus-visible, select:focus-visible, textarea:focus-visible,
 button:focus-visible, a:focus-visible {
-  outline-color: #a1a1aa;
+  outline-color: #71717a;
   outline-offset: 2px;
 }
 
-::placeholder { color: #a1a1aa; }
+::placeholder { color: #71717a; }
