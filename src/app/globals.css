@@ -239,3 +239,29 @@ button:disabled {
   transform: none !important;
   box-shadow: none !important;
 }
+
+/* Acabamento institucional SEICE: grafite, amarelo-ouro e superfícies neutras. */
+main > div > header {
+  border-top: 3px solid var(--brand-accent);
+}
+main > div > section > article,
+main > div > section.rounded-xl {
+  border-top-color: color-mix(in srgb, var(--brand-accent) 58%, var(--border)) !important;
+}
+main a:hover {
+  text-decoration-color: var(--brand-accent);
+}
+main button[class*="bg-amber-"],
+main button[class*="bg-yellow-"],
+main a[class*="bg-amber-"],
+main a[class*="bg-yellow-"] {
+  background-color: var(--brand-accent) !important;
+  color: #211b0e !important;
+  border-color: var(--brand-accent) !important;
+}
+main button[class*="bg-amber-"]:hover,
+main button[class*="bg-yellow-"]:hover,
+main a[class*="bg-amber-"]:hover,
+main a[class*="bg-yellow-"]:hover {
+  background-color: var(--brand-accent-hover) !important;
+}
