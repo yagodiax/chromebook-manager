@@ -137,12 +137,12 @@ export default function RelatorioGastosPage() {
           </article>)}
         </section>
 
-        <section className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_.85fr]">
+        <section className="mt-5 grid grid-cols-1 gap-5">
           <article className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]">
             <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-teal-700 dark:text-teal-300">Visão financeira</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Evolução dos gastos</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Custos de reparos concluídos ao longo dos últimos 12 meses.</p></div><span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 dark:bg-teal-950/50 dark:text-teal-200">Anual · 12 meses</span></div>
-            <div className="mt-6 grid h-56 grid-cols-6 items-end gap-2 sm:grid-cols-12 sm:gap-3 border-b border-dashed border-slate-200 px-1 dark:border-slate-700">
+            <div className="mt-6 grid h-64 grid-cols-6 items-end gap-2 sm:grid-cols-12 sm:gap-4 border-b border-dashed border-slate-200 px-2 dark:border-slate-700">
               {meses.map((mes) => <div key={mes.chave} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
-                <span className="max-w-full truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400 sm:text-xs">{mes.valor > 0 ? moeda(mes.valor) : "—"}</span>
+                <span className="whitespace-nowrap text-[10px] font-semibold text-slate-500 dark:text-slate-400 sm:text-xs">{mes.valor > 0 ? moeda(mes.valor) : "—"}</span>
                 <div className="flex h-[72%] w-full items-end justify-center"><div title={`${mes.nome}: ${moeda(mes.valor)}`} className={`w-full max-w-12 rounded-t-lg bg-gradient-to-t from-teal-600 via-teal-500 to-cyan-400 shadow-sm shadow-teal-900/10 transition-all ${mes.valor > 0 ? "min-h-2" : "h-1"}`} style={{ height: mes.valor > 0 ? `${Math.max(8, (mes.valor / maxMes) * 100)}%` : "4px" }} /></div>
                 <span className="pb-2 text-xs font-bold text-slate-600 dark:text-slate-300">{mes.nome}</span>
               </div>)}
