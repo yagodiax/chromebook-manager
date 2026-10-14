@@ -15,7 +15,7 @@ type Usuario = {
 type NovoUsuario = { id: string; nome: string; usuario: string; perfil: string; precisaAtivar: boolean };
 
 const campo =
-  "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 dark:border-[#45454a] dark:bg-[#303035] dark:text-gray-100";
+  "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10 dark:border-[#45454a] dark:bg-[#303035] dark:text-gray-100";
 const cartao = "rounded-xl border border-gray-200 bg-white dark:border-[#48484d] dark:bg-[#303035]";
 function dataBR(valor: string) {
   if (!valor) return "—";
@@ -119,29 +119,29 @@ export default function UsuariosPage() {
       <div className="mx-auto max-w-6xl space-y-5">
         <header className="flex flex-col gap-3 border-b border-gray-200 pb-5 sm:flex-row sm:items-end sm:justify-between dark:border-[#55555a]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-800 dark:text-teal-300">Administração</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-700 dark:text-gray-300">Administração</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl dark:text-white">Usuários</h1>
             <p className="mt-1.5 max-w-2xl text-sm text-gray-600 dark:text-gray-300">Gerencie o acesso ao sistema. Senhas não ficam visíveis para administradores.</p>
           </div>
           <div className="flex items-center gap-2 self-start rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 sm:self-auto dark:border-[#55555a] dark:bg-[#303035] dark:text-gray-300">
-            <span className="h-2 w-2 rounded-full bg-teal-700" />
+            <span className="h-2 w-2 rounded-full bg-gray-500" />
             <span><strong className="font-semibold text-gray-900 dark:text-white">{usuarios.length}</strong> conta(s)</span>
           </div>
         </header>
 
-        {erro && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{erro}</div>}
+        {erro && <div role="alert" className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 dark:border-[#55555a] dark:bg-[#25252a] dark:text-gray-200">{erro}</div>}
         {mensagem && <div role="status" className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 dark:border-[#55555a] dark:bg-[#303035] dark:text-gray-200">{mensagem}</div>}
 
         {novo && codigo && (
-          <section className="rounded-xl border border-teal-800/20 bg-white p-5 dark:border-teal-700/40 dark:bg-[#303035]">
+          <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-500 dark:bg-[#303035]">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-teal-800 dark:text-teal-300">Código de primeiro acesso</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">Código de primeiro acesso</p>
                 <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">Conta de {novo.nome} criada</h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Usuário: <strong>@{novo.usuario}</strong>. Entregue o código diretamente à pessoa.</p>
                 <p className="mt-3 inline-block select-all rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-xl font-bold tracking-[0.2em] text-gray-900 dark:border-[#55555a] dark:bg-[#25252a] dark:text-white">{codigo}</p>
               </div>
-              <button type="button" onClick={copiarCodigo} className="shrink-0 rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-900">Copiar código</button>
+              <button type="button" onClick={copiarCodigo} className="shrink-0 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700">Copiar código</button>
             </div>
             <button type="button" onClick={() => { setNovo(null); setCodigo(""); }} className="mt-3 text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Ocultar código</button>
           </section>
@@ -150,7 +150,7 @@ export default function UsuariosPage() {
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.4fr)]">
           <section className={cartao + " p-5"}>
             <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-800 dark:text-teal-300">Nova conta</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-700 dark:text-gray-300">Nova conta</p>
               <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">Cadastrar usuário</h2>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">A pessoa cria a própria senha no primeiro acesso.</p>
             </div>
@@ -164,7 +164,7 @@ export default function UsuariosPage() {
                 <input className={campo} value={usuario} onChange={(e) => setUsuario(e.target.value.toLowerCase().replace(/\s/g, ""))} placeholder="Ex.: maria.silva" minLength={3} maxLength={100} pattern="[a-zA-Z0-9._-]+" autoComplete="off" required />
                 <span className="mt-1.5 block text-xs text-gray-500 dark:text-gray-400">Use letras sem acento, números, ponto, hífen ou underline.</span>
               </label>
-              <button type="submit" disabled={salvando} className="w-full rounded-lg bg-teal-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-900 disabled:cursor-not-allowed disabled:opacity-60">{salvando ? "Criando conta..." : "Criar conta"}</button>
+              <button type="submit" disabled={salvando} className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60">{salvando ? "Criando conta..." : "Criar conta"}</button>
             </form>
           </section>
 
@@ -190,15 +190,15 @@ export default function UsuariosPage() {
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-700 dark:border-[#55555a] dark:bg-[#25252a] dark:text-gray-200">{(item.nome[0] || "U").toUpperCase()}</div>
                       <div className="min-w-0">
-                        <p className="truncate font-semibold text-gray-900 dark:text-white">{item.nome} {item.proprioUsuario && <span className="ml-1 text-xs font-medium text-teal-800 dark:text-teal-300">(você)</span>}</p>
+                        <p className="truncate font-semibold text-gray-900 dark:text-white">{item.nome} {item.proprioUsuario && <span className="ml-1 text-xs font-medium text-gray-700 dark:text-gray-300">(você)</span>}</p>
                         <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">@{item.usuario}</p>
                         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Criado em {dataBR(String(item.criadoEm))}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                       <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-[#414146] dark:text-gray-200">{item.perfil === "admin" ? "Administrador" : "Usuário"}</span>
-                      <span className={"rounded-md px-2.5 py-1 text-xs font-medium " + (item.precisaAtivar ? "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200" : "bg-teal-50 text-teal-800 dark:bg-teal-950/30 dark:text-teal-200")}>{item.precisaAtivar ? "Aguardando ativação" : "Senha configurada"}</span>
-                      {!item.proprioUsuario && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-red-900 dark:hover:bg-red-950/30 dark:hover:text-red-200">Excluir</button>}
+                      <span className={"rounded-md px-2.5 py-1 text-xs font-medium " + (item.precisaAtivar ? "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200")}>{item.precisaAtivar ? "Aguardando ativação" : "Senha configurada"}</span>
+                      {!item.proprioUsuario && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-[#66666b] dark:hover:bg-[#414146] dark:hover:text-gray-100">Excluir</button>}
                     </div>
                   </article>
                 ))}
