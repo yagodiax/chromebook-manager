@@ -29,7 +29,7 @@ function csv(valor: string | number) { return '"' + String(valor).replace(/"/g, 
 
 export default function RelatorioGastosPage() {
   const [registros, setRegistros] = useState<Registro[]>([]);
-  const [periodo, setPeriodo] = useState<Periodo>("30-dias");
+  const [periodo, setPeriodo] = useState<Periodo>("1-ano");
   const [equipamentoId, setEquipamentoId] = useState("todos");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -69,8 +69,8 @@ export default function RelatorioGastosPage() {
 
   const meses = useMemo(() => {
     const agora = new Date();
-    return Array.from({ length: 6 }, (_, indice) => {
-      const data = new Date(agora.getFullYear(), agora.getMonth() - (5 - indice), 1);
+    return Array.from({ length: 12 }, (_, indice) => {
+      const data = new Date(agora.getFullYear(), agora.getMonth() - (11 - indice), 1);
       const chave = data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0");
       const nome = data.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
       const valor = registros.filter((item) => (equipamentoId === "todos" || item.equipamentoId === equipamentoId) && item.tipo === "retorno-de-reparo" && (item.data || "").slice(0, 7) === chave).reduce((soma, item) => soma + (Number(item.custo) || 0), 0);
@@ -139,8 +139,8 @@ export default function RelatorioGastosPage() {
 
         <section className="mt-5 grid gap-5 xl:grid-cols-[1.45fr_.85fr]">
           <article className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]">
-            <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-teal-700 dark:text-teal-300">Visão financeira</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Evolução dos gastos</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Custos de reparos concluídos nos últimos seis meses.</p></div><span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 dark:bg-teal-950/50 dark:text-teal-200">Mensal</span></div>
-            <div className="mt-6 grid h-56 grid-cols-6 items-end gap-3 border-b border-dashed border-slate-200 px-1 dark:border-slate-700 sm:gap-5">
+            <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-teal-700 dark:text-teal-300">Visão financeira</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Evolução dos gastos</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Custos de reparos concluídos ao longo dos últimos 12 meses.</p></div><span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800 dark:bg-teal-950/50 dark:text-teal-200">Anual · 12 meses</span></div>
+            <div className="mt-6 grid h-56 grid-cols-6 items-end gap-2 sm:grid-cols-12 sm:gap-3 border-b border-dashed border-slate-200 px-1 dark:border-slate-700 sm:gap-5">
               {meses.map((mes) => <div key={mes.chave} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
                 <span className="max-w-full truncate text-[10px] font-semibold text-slate-500 dark:text-slate-400 sm:text-xs">{mes.valor > 0 ? moeda(mes.valor) : "—"}</span>
                 <div className="flex h-[72%] w-full items-end justify-center"><div title={`${mes.nome}: ${moeda(mes.valor)}`} className={`w-full max-w-12 rounded-t-lg bg-gradient-to-t from-teal-600 via-teal-500 to-cyan-400 shadow-sm shadow-teal-900/10 transition-all ${mes.valor > 0 ? "min-h-2" : "h-1"}`} style={{ height: mes.valor > 0 ? `${Math.max(8, (mes.valor / maxMes) * 100)}%` : "4px" }} /></div>
@@ -157,8 +157,8 @@ export default function RelatorioGastosPage() {
         </section>
 
         <section className="mt-5 rounded-2xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-sky-700 dark:text-sky-300">Refine a consulta</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Filtros do relatório</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aplique um período e, se quiser, veja apenas um equipamento.</p></div><button type="button" onClick={() => { setPeriodo("30-dias"); setEquipamentoId("todos"); }} className="self-start rounded-lg px-3 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-50 dark:text-teal-200 dark:hover:bg-teal-950/40">Limpar filtros ↺</button></div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Período</span><select id="periodo" className={campo} value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}><option value="7-dias">Últimos 7 dias</option><option value="30-dias">Últimos 30 dias</option><option value="6-meses">Últimos 6 meses</option><option value="1-ano">Último ano</option><option value="todo">Todo o histórico</option></select></label><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Equipamento</span><select id="equipamento" className={campo} value={equipamentoId} onChange={(e) => setEquipamentoId(e.target.value)}><option value="todos">Todos os equipamentos</option>{equipamentos.map(({ id, equipamento }) => <option key={id} value={id}>{equipamento.patrimonio || id} · {TIPOS[equipamento.tipo] || equipamento.tipo} · {equipamento.modelo}</option>)}</select></label></div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-sky-700 dark:text-sky-300">Refine a consulta</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Filtros do relatório</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aplique um período e, se quiser, veja apenas um equipamento.</p></div><button type="button" onClick={() => { setPeriodo("1-ano"); setEquipamentoId("todos"); }} className="self-start rounded-lg px-3 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-50 dark:text-teal-200 dark:hover:bg-teal-950/40">Limpar filtros ↺</button></div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Período</span><select id="periodo" className={campo} value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}><option value="7-dias">Últimos 7 dias</option><option value="30-dias">Últimos 30 dias</option><option value="6-meses">Últimos 6 meses</option><option value="1-ano">Últimos 12 meses (anual)</option><option value="todo">Todo o histórico</option></select></label><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Equipamento</span><select id="equipamento" className={campo} value={equipamentoId} onChange={(e) => setEquipamentoId(e.target.value)}><option value="todos">Todos os equipamentos</option>{equipamentos.map(({ id, equipamento }) => <option key={id} value={id}>{equipamento.patrimonio || id} · {TIPOS[equipamento.tipo] || equipamento.tipo} · {equipamento.modelo}</option>)}</select></label></div>
           <div className="mt-4 flex flex-wrap gap-2"><span className="rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-200">{filtrados.length} registro(s)</span><span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">{retornos.length} retorno(s) contabilizados</span><span className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Envios não somam custo até o retorno</span></div>
         </section>
 
