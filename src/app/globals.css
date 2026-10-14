@@ -12,10 +12,10 @@
 
 .dark {
   color-scheme: dark;
-  --background: #27272a;
+  --background: #18181b;
   --foreground: #f4f4f5;
-  --surface: #303035;
-  --border: #48484d;
+  --surface: #27272a;
+  --border: #3f3f46;
 }
 
 @theme inline {
@@ -29,65 +29,84 @@ html, body { min-height: 100%; }
 html { scroll-behavior: smooth; scrollbar-color: #a1a1aa transparent; }
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background) !important;
+  color: var(--foreground) !important;
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color .15s ease, color .15s ease;
 }
 ::selection { background: #d4d4d8; color: #18181b; }
 .dark ::selection { background: #52525b; color: #fafafa; }
 
-/* Paleta global neutra: neutraliza cores antigas sem alterar a lógica das páginas. */
-[class*="bg-gradient-to-"],
-[class*="from-teal-"], [class*="from-cyan-"], [class*="from-sky-"], [class*="from-blue-"],
-[class*="from-emerald-"], [class*="from-green-"], [class*="from-lime-"], [class*="from-amber-"],
-[class*="from-yellow-"], [class*="from-orange-"], [class*="from-red-"], [class*="from-rose-"],
-[class*="from-pink-"], [class*="from-fuchsia-"], [class*="from-purple-"], [class*="from-violet-"],
-[class*="from-indigo-"] {
-  background-image: none !important;
-  background-color: #3f3f46 !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
+/* Identidade estritamente monocromática: neutraliza utilitários coloridos antigos. */
+:root {
+  --neutral-bg: #f4f4f5;
+  --neutral-surface: #ffffff;
+  --neutral-text: #27272a;
+  --neutral-muted: #71717a;
+  --neutral-border: #e4e4e7;
+}
+.dark {
+  --neutral-bg: #18181b;
+  --neutral-surface: #27272a;
+  --neutral-text: #f4f4f5;
+  --neutral-muted: #a1a1aa;
+  --neutral-border: #3f3f46;
 }
 
 [class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
 [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-amber-"],
 [class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-red-"], [class*="bg-rose-"],
 [class*="bg-pink-"], [class*="bg-fuchsia-"], [class*="bg-purple-"], [class*="bg-violet-"],
-[class*="bg-indigo-"], [class*="bg-[#"] {
-  background-color: #f4f4f5 !important;
+[class*="bg-indigo-"], [class*="bg-[#"], [class*="bg-[rgb"], [class*="bg-[hsl"] {
+  background-color: var(--neutral-surface) !important;
   background-image: none !important;
 }
 .dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"], .dark [class*="bg-blue-"],
 .dark [class*="bg-emerald-"], .dark [class*="bg-green-"], .dark [class*="bg-lime-"], .dark [class*="bg-amber-"],
 .dark [class*="bg-yellow-"], .dark [class*="bg-orange-"], .dark [class*="bg-red-"], .dark [class*="bg-rose-"],
 .dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"], .dark [class*="bg-violet-"],
-.dark [class*="bg-indigo-"], .dark [class*="dark:bg-[#"] {
-  background-color: #303035 !important;
+.dark [class*="bg-indigo-"], .dark [class*="dark:bg-[#"], .dark [class*="dark:bg-[rgb"], .dark [class*="dark:bg-[hsl"] {
+  background-color: var(--neutral-surface) !important;
   background-image: none !important;
+}
+
+[class*="from-teal-"], [class*="from-cyan-"], [class*="from-sky-"], [class*="from-blue-"],
+[class*="from-emerald-"], [class*="from-green-"], [class*="from-lime-"], [class*="from-amber-"],
+[class*="from-yellow-"], [class*="from-orange-"], [class*="from-red-"], [class*="from-rose-"],
+[class*="from-pink-"], [class*="from-fuchsia-"], [class*="from-purple-"], [class*="from-violet-"],
+[class*="from-indigo-"], [class*="via-green-"], [class*="to-green-"], [class*="via-emerald-"], [class*="to-emerald-"] {
+  background-image: none !important;
+  background-color: #52525b !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
 }
 
 [class*="text-teal-"], [class*="text-cyan-"], [class*="text-sky-"], [class*="text-blue-"],
 [class*="text-emerald-"], [class*="text-green-"], [class*="text-lime-"], [class*="text-amber-"],
 [class*="text-yellow-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-rose-"],
 [class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-purple-"], [class*="text-violet-"],
-[class*="text-indigo-"] { color: #52525b !important; }
-.dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"], .dark [class*="text-blue-"],
-.dark [class*="text-emerald-"], .dark [class*="text-green-"], .dark [class*="text-lime-"], .dark [class*="text-amber-"],
-.dark [class*="text-yellow-"], .dark [class*="text-orange-"], .dark [class*="text-red-"], .dark [class*="text-rose-"],
-.dark [class*="text-pink-"], .dark [class*="text-fuchsia-"], .dark [class*="text-purple-"], .dark [class*="text-violet-"],
-.dark [class*="text-indigo-"] { color: #d4d4d8 !important; }
+[class*="text-indigo-"], [class*="hover:text-green-"], [class*="hover:text-emerald-"] {
+  color: var(--neutral-muted) !important;
+}
 
 [class*="border-teal-"], [class*="border-cyan-"], [class*="border-sky-"], [class*="border-blue-"],
 [class*="border-emerald-"], [class*="border-green-"], [class*="border-lime-"], [class*="border-amber-"],
 [class*="border-yellow-"], [class*="border-orange-"], [class*="border-red-"], [class*="border-rose-"],
 [class*="border-pink-"], [class*="border-fuchsia-"], [class*="border-purple-"], [class*="border-violet-"],
-[class*="border-indigo-"], [class*="border-[#"] { border-color: #e4e4e7 !important; }
-.dark [class*="border-teal-"], .dark [class*="border-cyan-"], .dark [class*="border-sky-"], .dark [class*="border-blue-"],
-.dark [class*="border-emerald-"], .dark [class*="border-green-"], .dark [class*="border-lime-"], .dark [class*="border-amber-"],
-.dark [class*="border-yellow-"], .dark [class*="border-orange-"], .dark [class*="border-red-"], .dark [class*="border-rose-"],
-.dark [class*="border-pink-"], .dark [class*="border-fuchsia-"], .dark [class*="border-purple-"], .dark [class*="border-violet-"],
-.dark [class*="border-indigo-"], .dark [class*="dark:border-[#"] { border-color: #48484d !important; }
+[class*="border-indigo-"], [class*="border-[#"] {
+  border-color: var(--neutral-border) !important;
+}
+
+[class*="ring-green-"], [class*="ring-emerald-"], [class*="ring-blue-"], [class*="ring-teal-"],
+[class*="shadow-green-"], [class*="shadow-emerald-"], [class*="shadow-blue-"], [class*="shadow-teal-"] {
+  --tw-ring-color: #a1a1aa !important;
+  --tw-shadow-color: #a1a1aa !important;
+  box-shadow: none !important;
+}
+
+/* Ícones e gráficos SVG também ficam em tons neutros, inclusive quando usam cores inline. */
+svg [fill]:not([fill="none"]) { fill: currentColor !important; }
+svg [stroke]:not([stroke="none"]) { stroke: currentColor !important; }
 
 a[class*="bg-gray-900"], button[class*="bg-gray-900"], input[class*="bg-gray-900"] {
   background: #27272a !important;
