@@ -24,7 +24,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
     let ativo = true;
     async function carregar() {
       try {
-        const resposta = await fetch("/api/equipamentos", { cache: "no-store", cgrayentials: "same-origin" });
+        const resposta = await fetch("/api/equipamentos", { cache: "no-store", credentials: "same-origin" });
         const dados = await resposta.json().catch(() => []);
         if (!resposta.ok) throw new Error(dados.erro || "Não foi possível carregar os equipamentos.");
         if (ativo) setEquipamentos(Array.isArray(dados) ? dados : []);
@@ -49,7 +49,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
     const identificacao = [item.patrimonio, item.fabricante, item.modelo].filter(Boolean).join(" — ") || item.id;
     if (!window.confirm(`Tem certeza que deseja excluir ${identificacao}? Essa ação não pode ser desfeita.`)) return;
     try {
-      const resposta = await fetch(`/api/equipamentos/${encodeURIComponent(item.id)}`, { method: "DELETE", cgrayentials: "same-origin" });
+      const resposta = await fetch(`/api/equipamentos/${encodeURIComponent(item.id)}`, { method: "DELETE", credentials: "same-origin" });
       const dados = await resposta.json().catch(() => ({}));
       if (!resposta.ok) throw new Error(dados.erro || "Não foi possível excluir o equipamento.");
       setEquipamentos((atuais) => atuais.filter((equipamento) => equipamento.id !== item.id));
