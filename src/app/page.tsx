@@ -5,80 +5,53 @@ import { useEffect, useMemo, useState } from "react";
 
 type Equipamento = { id: string; patrimonio: string; tipo: string; fabricante: string; modelo: string; localizacao: string; status: string };
 type Registro = { id: string; equipamentoId: string; equipamento: { patrimonio: string; tipo: string; fabricante: string; modelo: string; localizacao: string }; tipo: string; data: string; descricao: string; custo: number; destinoReparo: string; resultado: string };
-
 const TIPOS: Record<string, string> = { chromebook: "Chromebooks", notebook: "Notebooks", projetor: "Projetores", catraca: "Catracas", impressora: "Impressoras" };
 const STATUS: Record<string, string> = { disponivel: "Disponível", "em-uso": "Em uso", "em-reparo": "Em reparo", inativo: "Inativo", "para-descarte": "Para descarte" };
 const TIPOS_HISTORICO: Record<string, string> = { ocorrencia: "Ocorrência", manutencao: "Manutenção", "reposicao-de-peca": "Reposição de peça", "envio-para-reparo": "Envio para reparo", "retorno-de-reparo": "Retorno do reparo" };
-
-function formatarData(valor: string) {
-  if (!valor) return "—";
-  const partes = valor.slice(0, 10).split("-");
-  return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : valor;
-}
-function moeda(valor: number) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
+function formatarData(valor: string) { if (!valor) return "—"; const partes = valor.slice(0, 10).split("-"); return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : valor; }
+function moeda(valor: number) { return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); }
 
 export default function Home() {
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
   const [historico, setHistorico] = useState<Registro[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-
   useEffect(() => {
     let ativo = true;
     Promise.all([
       fetch("/api/equipamentos", { cache: "no-store", credentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar equipamentos."); return d; }),
       fetch("/api/historico-equipamentos", { cache: "no-store", credentials: "same-origin" }).then(async (r) => { const d = await r.json().catch(() => []); if (!r.ok) throw new Error(d.erro || "Falha ao consultar histórico."); return d; }),
-    ]).then(([eq, hist]) => {
-      if (!ativo) return;
-      setEquipamentos(Array.isArray(eq) ? eq : []);
-      setHistorico(Array.isArray(hist) ? hist : []);
-    }).catch((e: unknown) => { if (ativo) setErro(e instanceof Error ? e.message : "Não foi possível carregar o dashboard."); })
-      .finally(() => { if (ativo) setCarregando(false); });
+    ]).then(([eq, hist]) => { if (!ativo) return; setEquipamentos(Array.isArray(eq) ? eq : []); setHistorico(Array.isArray(hist) ? hist : []); })
+      .catch((e: unknown) => { if (ativo) setErro(e instanceof Error ? e.message : "Não foi possível carregar o dashboard."); }).finally(() => { if (ativo) setCarregando(false); });
     return () => { ativo = false; };
   }, []);
-
   const porTipo = useMemo(() => Object.keys(TIPOS).map((tipo) => ({ tipo, nome: TIPOS[tipo], quantidade: equipamentos.filter((item) => item.tipo === tipo).length })), [equipamentos]);
   const emReparo = equipamentos.filter((item) => item.status === "em-reparo").length;
   const emUso = equipamentos.filter((item) => item.status === "em-uso").length;
   const custoReparos = historico.filter((item) => item.tipo === "retorno-de-reparo").reduce((total, item) => total + (Number(item.custo) || 0), 0);
-
   const cards = [
-    { titulo: "Equipamentos cadastrados", valor: equipamentos.length, descricao: "Total de itens no inventário" },
-    { titulo: "Em uso", valor: emUso, descricao: "Equipamentos em utilização" },
-    { titulo: "Em reparo", valor: emReparo, descricao: "Itens enviados à assistência" },
-    { titulo: "Custo de reparos", valor: moeda(custoReparos), descricao: "Total registrado nos retornos" },
+    { titulo: "Equipamentos cadastrados", valor: equipamentos.length, descricao: "Total de itens no inventário", cor: "from-teal-500 to-cyan-500", fundo: "bg-teal-50 dark:bg-teal-950/30", texto: "text-teal-700 dark:text-teal-300", icone: "▦" },
+    { titulo: "Em uso", valor: emUso, descricao: "Equipamentos em utilização", cor: "from-sky-500 to-blue-600", fundo: "bg-sky-50 dark:bg-sky-950/30", texto: "text-sky-700 dark:text-sky-300", icone: "✓" },
+    { titulo: "Em reparo", valor: emReparo, descricao: "Itens enviados à assistência", cor: "from-amber-400 to-orange-500", fundo: "bg-amber-50 dark:bg-amber-950/30", texto: "text-amber-700 dark:text-amber-300", icone: "⚒" },
+    { titulo: "Custo de reparos", valor: moeda(custoReparos), descricao: "Total registrado nos retornos", cor: "from-violet-500 to-fuchsia-500", fundo: "bg-violet-50 dark:bg-violet-950/30", texto: "text-violet-700 dark:text-violet-300", icone: "R$" },
   ];
-
   return (
-    <div className="min-h-screen bg-gray-100 p-5 sm:p-8 dark:bg-[#3a3a3f]">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-gray-400">Visão geral</p><h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">Dashboard</h1><p className="mt-2 text-gray-600 dark:text-gray-300">Acompanhe os equipamentos e as atividades de suporte da escola.</p></div><Link href="/cadastros" className="rounded-xl bg-gray-900 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900">+ Novo cadastro</Link></div>
-        {erro && <div role="alert" className="mt-6 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{erro}</div>}
-        <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map((card, index) => {
-          const cores = [
-            { borda: "border-t-teal-500", fundo: "bg-teal-50 dark:bg-teal-950/30", texto: "text-teal-700 dark:text-teal-300", ponto: "bg-teal-500" },
-            { borda: "border-t-sky-500", fundo: "bg-sky-50 dark:bg-sky-950/30", texto: "text-sky-700 dark:text-sky-300", ponto: "bg-sky-500" },
-            { borda: "border-t-amber-500", fundo: "bg-amber-50 dark:bg-amber-950/30", texto: "text-amber-700 dark:text-amber-300", ponto: "bg-amber-500" },
-            { borda: "border-t-violet-500", fundo: "bg-violet-50 dark:bg-violet-950/30", texto: "text-violet-700 dark:text-violet-300", ponto: "bg-violet-500" },
-          ][index];
-          return <div key={card.titulo} className={`relative overflow-hidden rounded-2xl border border-gray-200 border-t-4 ${cores.borda} bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-[#505057] dark:bg-[#444449]`}>
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">{card.titulo}</p>
-              <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${cores.ponto}`} aria-hidden="true" />
-            </div>
-            <p className={`mt-4 text-3xl font-bold tracking-tight ${cores.texto}`}>{carregando ? "—" : card.valor}</p>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{card.descricao}</p>
-            <div className={`pointer-events-none absolute -bottom-7 -right-5 h-16 w-16 rounded-full opacity-50 blur-2xl ${cores.fundo}`} aria-hidden="true" />
-          </div>;
-        })}</div>
-        <div className="mt-7 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-[#505057] dark:bg-[#444449]"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-gray-950 dark:text-white">Inventário por categoria</h2><Link href="/equipamentos" className="text-sm font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-200 dark:hover:text-teal-100">Ver todos →</Link></div><div className="mt-4 space-y-4">{porTipo.map((item) => <div key={item.tipo}><div className="mb-2 flex items-center justify-between text-sm"><span className="text-gray-700 dark:text-gray-200">{item.nome}</span><span className="font-semibold text-gray-900 dark:text-white">{carregando ? "—" : item.quantidade}</span></div><div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-[#333338]"><div className="h-full rounded-full bg-teal-600 transition-all dark:bg-teal-300" style={{ width: equipamentos.length ? String((item.quantidade / equipamentos.length) * 100) + "%" : "0%" }} /></div></div>)}</div></section>
-          <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-[#505057] dark:bg-[#444449]"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold text-gray-950 dark:text-white">Atividade recente</h2><Link href="/historico" className="text-sm font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-200 dark:hover:text-teal-100">Ver histórico →</Link></div>{historico.length === 0 ? <div className="py-12 text-center"><p className="font-medium text-gray-800 dark:text-gray-100">Nenhuma atividade registrada</p><p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Os registros de manutenção e reparo aparecerão aqui.</p><Link href="/cadastros" className="mt-4 inline-block text-sm font-semibold text-teal-700 dark:text-teal-200">Criar primeiro registro →</Link></div> : <div className="mt-4 divide-y divide-gray-100 dark:divide-[#55555c]">{historico.slice(0, 6).map((item) => <div key={item.id} className="py-4 first:pt-0"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{TIPOS_HISTORICO[item.tipo] || item.tipo}</span><span className="text-xs text-gray-500 dark:text-gray-400">{formatarData(item.data)}</span></div><p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">{item.equipamento.patrimonio || item.equipamento.tipo} · {[item.equipamento.fabricante, item.equipamento.modelo].filter(Boolean).join(" ")}</p><p className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-300">{item.descricao}</p>{item.tipo === "retorno-de-reparo" && <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{moeda(Number(item.custo) || 0)}</p>}</div>)}</div>}</section>
-        </div>
-        <section className="mt-7 rounded-2xl border border-gray-200 bg-white p-5 dark:border-[#505057] dark:bg-[#444449]"><h2 className="text-lg font-semibold text-gray-950 dark:text-white">Status do inventário</h2><div className="mt-4 flex flex-wrap gap-2">{Object.entries(STATUS).map(([status, nome]) => <span key={status} className="rounded-full bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 dark:bg-[#333338] dark:text-gray-200">{nome}: {carregando ? "—" : equipamentos.filter((item) => item.status === status).length}</span>)}</div></section>
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-7 xl:p-9 dark:bg-[#3a3a3f]">
+      <div className="mx-auto max-w-[1500px]">
+        <header className="relative isolate overflow-hidden rounded-[28px] bg-gradient-to-br from-[#0d766e] via-[#087f8c] to-[#3656a6] p-6 text-white shadow-xl shadow-teal-950/10 sm:p-8">
+          <div className="pointer-events-none absolute -right-10 -top-20 -z-10 h-64 w-64 rounded-full bg-cyan-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 right-1/3 -z-10 h-64 w-64 rounded-full bg-violet-300/15 blur-3xl" />
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-teal-100">Centro de operações · TI</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Dashboard</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-cyan-50/90">Acompanhe o inventário, a disponibilidade dos equipamentos e as atividades recentes de suporte.</p></div><Link href="/cadastros" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-extrabold text-teal-900 shadow-lg transition hover:-translate-y-0.5 hover:bg-teal-50">＋ Novo registro</Link></div>
+          <div className="mt-6 flex flex-wrap gap-2"><span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90">Inventário em tempo real</span><span className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90">Manutenção e suporte</span></div>
+        </header>
+        {erro && <div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">{erro}</div>}
+        <section className="mt-5 grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">{cards.map((item) => <article key={item.titulo} className="relative overflow-hidden rounded-2xl border border-white bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-[#2b454c] dark:bg-[#1c2a33]"><div className={\`absolute inset-x-0 top-0 h-1 bg-gradient-to-r \${item.cor}\`} /><div className="flex items-start justify-between gap-3"><p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{item.titulo}</p><span className={\`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black \${item.fundo} \${item.texto}\`}>{item.icone}</span></div><p className={\`mt-4 text-3xl font-black tracking-tight \${item.texto}\`}>{carregando ? "—" : item.valor}</p><p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{item.descricao}</p></article>)}</section>
+        <section className="mt-5 grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
+          <article className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-teal-700 dark:text-teal-300">Visão geral</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Inventário por categoria</h2></div><Link href="/equipamentos" className="text-sm font-bold text-teal-700 hover:text-teal-900 dark:text-teal-300">Ver todos →</Link></div><div className="mt-6 space-y-5">{porTipo.map((item, index) => { const cores = ["from-teal-500 to-cyan-400", "from-sky-500 to-blue-500", "from-violet-500 to-fuchsia-400", "from-amber-400 to-orange-400", "from-rose-500 to-pink-400"]; return <div key={item.tipo}><div className="mb-2 flex items-center justify-between text-sm"><span className="font-semibold text-slate-700 dark:text-slate-200">{item.nome}</span><span className="font-black text-slate-900 dark:text-white">{carregando ? "—" : item.quantidade}</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-[#263b45]"><div className={\`h-full rounded-full bg-gradient-to-r \${cores[index]} transition-all duration-500\`} style={{ width: equipamentos.length ? String((item.quantidade / equipamentos.length) * 100) + "%" : "0%" }} /></div></div>; })}</div></article>
+          <article className="rounded-2xl border border-sky-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-sky-700 dark:text-sky-300">Linha do tempo</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Atividade recente</h2></div><Link href="/historico" className="text-sm font-bold text-sky-700 hover:text-sky-900 dark:text-sky-300">Ver histórico →</Link></div>{historico.length === 0 ? <div className="py-12 text-center"><p className="font-bold text-slate-800 dark:text-slate-100">Nenhuma atividade registrada</p><p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Manutenções e reparos aparecerão aqui.</p><Link href="/cadastros" className="mt-4 inline-block text-sm font-bold text-teal-700 dark:text-teal-300">Criar primeiro registro →</Link></div> : <div className="mt-4 divide-y divide-slate-100 dark:divide-[#2b454c]">{historico.slice(0, 6).map((item) => <div key={item.id} className="relative py-4 pl-5 first:pt-0 before:absolute before:bottom-0 before:left-0 before:top-4 before:w-0.5 before:bg-gradient-to-b before:from-teal-400 before:to-sky-400 first:before:top-0"><div className="flex flex-wrap items-center justify-between gap-2"><span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-800 dark:bg-sky-950/40 dark:text-sky-200">{TIPOS_HISTORICO[item.tipo] || item.tipo}</span><span className="text-xs text-slate-500 dark:text-slate-400">{formatarData(item.data)}</span></div><p className="mt-2 font-bold text-slate-900 dark:text-white">{item.equipamento.patrimonio || item.equipamento.tipo} · {[item.equipamento.fabricante, item.equipamento.modelo].filter(Boolean).join(" ")}</p><p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{item.descricao}</p>{item.tipo === "retorno-de-reparo" && <p className="mt-1 text-sm font-extrabold text-emerald-700 dark:text-emerald-300">{moeda(Number(item.custo) || 0)}</p>}</div>)}</div>}</article>
+        </section>
+        <section className="mt-5 rounded-2xl border border-violet-100 bg-white p-5 shadow-sm dark:border-[#3c3b61] dark:bg-[#1c2a33]"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.15em] text-violet-700 dark:text-violet-300">Condição dos ativos</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Status do inventário</h2></div><span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 dark:bg-violet-950/40 dark:text-violet-200">{equipamentos.length} equipamentos</span></div><div className="mt-4 flex flex-wrap gap-2">{Object.entries(STATUS).map(([status, nome]) => { const quantidade = equipamentos.filter((item) => item.status === status).length; const estilo = status === "em-uso" ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" : status === "em-reparo" ? "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200" : "bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200"; return <span key={status} className={\`rounded-xl px-3 py-2 text-xs font-bold \${estilo}\`}>{nome}: {carregando ? "—" : quantidade}</span>; })}</div></section>
       </div>
-    </div>
+    </main>
   );
 }
