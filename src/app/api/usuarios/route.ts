@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       return erro("O usuário deve ter de 3 a 100 caracteres e usar letras sem acento, números, ponto, hífen ou underline.", 400);
     }
     const id = randomUUID();
-    const codigo = randomBytes(4).toString("hex").toUpperCase();
+    const codigo = randomBytes(8).toString("hex").toUpperCase();
     const codigoHash = createHash("sha256").update(codigo).digest("hex");
     await pool.execute<ResultSetHeader>(
       `INSERT INTO usuarios (id, nome, usuario, senha_hash, codigo_ativacao_hash, perfil, ativo)

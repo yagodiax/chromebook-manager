@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     if (!usuario || !codigo || !senha || !confirmarSenha) return erro("Preencha todos os campos.", 400);
     if (senha.length < 8 || Buffer.byteLength(senha, "utf8") > 128) return erro("A senha deve ter pelo menos 8 caracteres e no máximo 128 bytes.", 400);
     if (senha !== confirmarSenha) return erro("As senhas não conferem.", 400);
-    if (!/^[A-F0-9]{8}$/.test(codigo)) return erro("Código de ativação inválido ou expirado.", 400);
+    if (!/^[A-F0-9]{16}$/.test(codigo)) return erro("Código de ativação inválido ou expirado.", 400);
     const [rows] = await pool.execute<UsuarioRow[]>(
       "SELECT id, codigo_ativacao_hash, senha_hash FROM usuarios WHERE usuario = ? AND ativo = 1 LIMIT 1", [usuario],
     );
