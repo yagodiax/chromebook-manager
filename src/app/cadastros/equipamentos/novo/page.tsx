@@ -179,8 +179,11 @@ export default function CadastroPage() {
               </>}
               {tipo === "impressora" && <>
                 {campoDetalhe("tecnologiaImpressao", "Tecnologia de impressão", "Ex.: laser, jato de tinta")}
-                {campoDetalhe("conexao", "Conexão", "Ex.: USB, rede, Wi-Fi")}
+                {campoDetalhe("conexao", "Conexão / rede", "Ex.: 192.168.1.50 (CORPORATIVO), USB")}
                 {campoDetalhe("enderecoIp", "Endereço IP", "Ex.: 192.168.1.50")}
+                {campoDetalhe("mac", "Endereço MAC", "AA:BB:CC:DD:EE:FF")}
+                {campoDetalhe("paginasImpressas", "Páginas impressas", "Ex.: 60399")}
+                {campoDetalhe("dataInstalacao", "Data de instalação", "AAAA-MM-DD")}
               </>}
             </div>
           </section>
