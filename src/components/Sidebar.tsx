@@ -157,6 +157,14 @@ export default function Sidebar() {
             + Novo Chromebook
           </Link>
 
+          <Link href="/cadastros" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname.startsWith("/cadastros") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Cadastros</Link>
+
+          <Link href="/historico" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname.startsWith("/historico") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Histórico</Link>
+
           <Link
             href="/relatorios/gastos"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
