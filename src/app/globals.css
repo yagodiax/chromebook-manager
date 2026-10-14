@@ -4,29 +4,25 @@
 
 :root {
   color-scheme: light;
-  --background: #f3f3f4;
-  --foreground: #202024;
-  --accent: #52525b;
-  --accent-hover: #3f3f46;
-  --accent-soft: #e4e4e7;
+  --background: #f4f4f5;
+  --foreground: #27272a;
   --surface: #ffffff;
+  --border: #e4e4e7;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #252529;
+  --background: #27272a;
   --foreground: #f4f4f5;
-  --accent: #a1a1aa;
-  --accent-hover: #d4d4d8;
-  --accent-soft: #3f3f46;
   --surface: #303035;
+  --border: #48484d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
 }
 
 html, body { min-height: 100%; }
@@ -35,14 +31,78 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-  transition: background-color .2s ease, color .2s ease;
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color .15s ease, color .15s ease;
 }
 ::selection { background: #d4d4d8; color: #18181b; }
 .dark ::selection { background: #52525b; color: #fafafa; }
 
+/* Paleta global neutra: neutraliza cores antigas sem alterar a lógica das páginas. */
+[class*="bg-gradient-to-"],
+[class*="from-teal-"], [class*="from-cyan-"], [class*="from-sky-"], [class*="from-blue-"],
+[class*="from-emerald-"], [class*="from-green-"], [class*="from-lime-"], [class*="from-amber-"],
+[class*="from-yellow-"], [class*="from-orange-"], [class*="from-red-"], [class*="from-rose-"],
+[class*="from-pink-"], [class*="from-fuchsia-"], [class*="from-purple-"], [class*="from-violet-"],
+[class*="from-indigo-"] {
+  background-image: none !important;
+  background-color: #3f3f46 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+[class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
+[class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-amber-"],
+[class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-red-"], [class*="bg-rose-"],
+[class*="bg-pink-"], [class*="bg-fuchsia-"], [class*="bg-purple-"], [class*="bg-violet-"],
+[class*="bg-indigo-"], [class*="bg-[#"] {
+  background-color: #f4f4f5 !important;
+  background-image: none !important;
+}
+.dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"], .dark [class*="bg-blue-"],
+.dark [class*="bg-emerald-"], .dark [class*="bg-green-"], .dark [class*="bg-lime-"], .dark [class*="bg-amber-"],
+.dark [class*="bg-yellow-"], .dark [class*="bg-orange-"], .dark [class*="bg-red-"], .dark [class*="bg-rose-"],
+.dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"], .dark [class*="bg-violet-"],
+.dark [class*="bg-indigo-"], .dark [class*="dark:bg-[#"] {
+  background-color: #303035 !important;
+  background-image: none !important;
+}
+
+[class*="text-teal-"], [class*="text-cyan-"], [class*="text-sky-"], [class*="text-blue-"],
+[class*="text-emerald-"], [class*="text-green-"], [class*="text-lime-"], [class*="text-amber-"],
+[class*="text-yellow-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-rose-"],
+[class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-purple-"], [class*="text-violet-"],
+[class*="text-indigo-"] { color: #52525b !important; }
+.dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"], .dark [class*="text-blue-"],
+.dark [class*="text-emerald-"], .dark [class*="text-green-"], .dark [class*="text-lime-"], .dark [class*="text-amber-"],
+.dark [class*="text-yellow-"], .dark [class*="text-orange-"], .dark [class*="text-red-"], .dark [class*="text-rose-"],
+.dark [class*="text-pink-"], .dark [class*="text-fuchsia-"], .dark [class*="text-purple-"], .dark [class*="text-violet-"],
+.dark [class*="text-indigo-"] { color: #d4d4d8 !important; }
+
+[class*="border-teal-"], [class*="border-cyan-"], [class*="border-sky-"], [class*="border-blue-"],
+[class*="border-emerald-"], [class*="border-green-"], [class*="border-lime-"], [class*="border-amber-"],
+[class*="border-yellow-"], [class*="border-orange-"], [class*="border-red-"], [class*="border-rose-"],
+[class*="border-pink-"], [class*="border-fuchsia-"], [class*="border-purple-"], [class*="border-violet-"],
+[class*="border-indigo-"], [class*="border-[#"] { border-color: #e4e4e7 !important; }
+.dark [class*="border-teal-"], .dark [class*="border-cyan-"], .dark [class*="border-sky-"], .dark [class*="border-blue-"],
+.dark [class*="border-emerald-"], .dark [class*="border-green-"], .dark [class*="border-lime-"], .dark [class*="border-amber-"],
+.dark [class*="border-yellow-"], .dark [class*="border-orange-"], .dark [class*="border-red-"], .dark [class*="border-rose-"],
+.dark [class*="border-pink-"], .dark [class*="border-fuchsia-"], .dark [class*="border-purple-"], .dark [class*="border-violet-"],
+.dark [class*="border-indigo-"], .dark [class*="dark:border-[#"] { border-color: #48484d !important; }
+
+a[class*="bg-gray-900"], button[class*="bg-gray-900"], input[class*="bg-gray-900"] {
+  background: #27272a !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+.dark a[class*="bg-gray-900"], .dark button[class*="bg-gray-900"], .dark input[class*="bg-gray-900"] {
+  background: #e4e4e7 !important;
+  color: #27272a !important;
+}
+
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
+select, textarea {
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
   outline: 2px solid #71717a;
   outline-offset: 2px;
@@ -50,7 +110,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
 select:focus, textarea:focus {
   border-color: #71717a;
-  box-shadow: 0 0 0 3px rgba(113, 113, 122, .13);
+  box-shadow: 0 0 0 3px rgba(113, 113, 122, .12);
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark select, .dark textarea {
+  border-color: #52525b;
+  background-color: #303035;
 }
 table tbody tr { transition: background-color .15s ease; }
 ::placeholder { color: #a1a1aa; }
