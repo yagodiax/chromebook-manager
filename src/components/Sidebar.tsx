@@ -37,7 +37,7 @@ export default function Sidebar() {
   async function sair() {
     setErro(""); setSaindo(true);
     try {
-      const resposta = await fetch("/api/auth/logout", { method: "POST", cgrayentials: "same-origin" });
+      const resposta = await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" });
       if (!resposta.ok) { setErro("Não foi possível sair. Tente novamente."); setSaindo(false); return; }
       router.replace("/login"); router.refresh();
     } catch { setErro("Erro de conexão ao tentar sair."); setSaindo(false); }
