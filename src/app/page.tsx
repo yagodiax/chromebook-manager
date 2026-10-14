@@ -141,10 +141,10 @@ export default function Home() {
                 const proporcao = equipamentos.length ? Math.round((item.quantidade / equipamentos.length) * 100) : 0;
                 const simbolos: Record<string, string> = { chromebook: "▣", notebook: "▱", projetor: "◉", catraca: "↔", impressora: "▤" };
                 return (
-                  <Link key={item.tipo} href="/equipamentos" className="group min-w-0 rounded-lg border border-gray-200 bg-gray-50/70 p-3 transition duration-150 hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50/60 dark:border-gray-600 dark:bg-[#30302f] dark:hover:border-amber-400 dark:hover:bg-[#3c382d]">
+                  <Link key={item.tipo} href="/equipamentos" className="group min-w-0 rounded-lg border border-gray-200 bg-gray-50/70 p-3 transition duration-150 hover:-translate-y-0.5 hover:border-amber-500 hover:bg-gray-100 dark:border-gray-600 dark:bg-[#30302f] dark:hover:border-amber-400 dark:hover:bg-[#3c382d]">
                     <div className="flex items-start justify-between gap-3">
                       <span className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-base text-gray-700 dark:border-gray-600 dark:bg-[#464646] dark:text-gray-100" aria-hidden="true">{simbolos[item.tipo] || "▦"}</span>
-                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-gray-600 dark:bg-gray-700 dark:text-gray-300">{carregando ? "—" : proporcao + "%"}</span>
+                      <span className="rounded-full border border-gray-300 bg-gray-200 px-2 py-0.5 text-[10px] font-bold tabular-nums text-gray-800 dark:border-gray-500 dark:bg-[#454542] dark:text-gray-100">{carregando ? "—" : proporcao + "%"}</span>
                     </div>
                     <p className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-300">{item.nome}</p>
                     <div className="mt-1 flex items-end justify-between gap-2">
@@ -152,7 +152,7 @@ export default function Home() {
                       <span className="pb-0.5 text-[10px] text-gray-500 transition group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white">Ver itens <span aria-hidden="true">↗</span></span>
                     </div>
                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                      <div className="h-full rounded-full bg-amber-500 transition-all duration-500 dark:bg-amber-400" style={{ width: carregando ? "0%" : String(proporcao) + "%" }} />
+                      <div className="h-full rounded-full bg-[#9a6b00] transition-all duration-500 dark:bg-[#e0b43d]" style={{ width: carregando ? "0%" : String(proporcao) + "%" }} />
                     </div>
                   </Link>
                 );
