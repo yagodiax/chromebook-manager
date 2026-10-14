@@ -49,10 +49,10 @@ body {
 .dark ::selection { background: #285c55; color: #f0fdfa; }
 
 /* Identidade visual compartilhada: menos cinza, mais contraste e tons teal/azul. */
-div.min-h-screen[class~="bg-gray-100"] {
+ .min-h-screen[class~="bg-gray-100"] {
   background: linear-gradient(135deg, #f0faf8 0%, #f7fafc 52%, #eef6ff 100%);
 }
-.dark div.min-h-screen[class~="dark:bg-[#3a3a3f]"] {
+.dark .min-h-screen[class~="dark:bg-[#3a3a3f]"] {
   background: linear-gradient(135deg, #111b22 0%, #15232c 58%, #182b31 100%);
 }
 .rounded-2xl[class~="bg-white"] {
@@ -91,6 +91,16 @@ select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
   outline: 2px solid #14b8a6;
   outline-offset: 2px;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select, textarea {
+  border-color: #c6e2dc;
+  background-color: #fbfefd;
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark select, .dark textarea {
+  border-color: #35515a;
+  background-color: #15252d;
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
 select:focus, textarea:focus {
