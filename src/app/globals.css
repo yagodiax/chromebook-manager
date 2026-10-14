@@ -214,3 +214,28 @@ aside [class*="text-red-"], aside [class*="text-rose-"] { color: var(--danger) !
 @media (max-width: 760px) {
   body { font-size: 13px; }
 }
+
+/* Padrão global de navegação e ações: mesma forma, foco e resposta ao hover. */
+button {
+  border-radius: 9px;
+  font-weight: 600;
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+a[class*="rounded"][class*="px-"] {
+  border-radius: 9px;
+  text-decoration: none;
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--brand-accent) !important;
+  outline-offset: 2px;
+}
+button:disabled {
+  transform: none !important;
+  box-shadow: none !important;
+}
