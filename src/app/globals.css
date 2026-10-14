@@ -4,22 +4,22 @@
 
 :root {
   color-scheme: light;
-  --background: #f2f8f7;
-  --foreground: #172b2b;
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
-  --accent-soft: #d9f7ef;
+  --background: #f3f3f4;
+  --foreground: #202024;
+  --accent: #52525b;
+  --accent-hover: #3f3f46;
+  --accent-soft: #e4e4e7;
   --surface: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #111b22;
-  --foreground: #edf7f5;
-  --accent: #2dd4bf;
-  --accent-hover: #5eead4;
-  --accent-soft: #153b3a;
-  --surface: #1c2a33;
+  --background: #252529;
+  --foreground: #f4f4f5;
+  --accent: #a1a1aa;
+  --accent-hover: #d4d4d8;
+  --accent-soft: #3f3f46;
+  --surface: #303035;
 }
 
 @theme inline {
@@ -30,88 +30,31 @@
 }
 
 html, body { min-height: 100%; }
-html { scroll-behavior: smooth; scrollbar-color: #8bcac0 transparent; }
+html { scroll-behavior: smooth; scrollbar-color: #a1a1aa transparent; }
 body {
   margin: 0;
-  background:
-    radial-gradient(ellipse at 95% 0%, rgba(45, 212, 191, .11), transparent 34rem),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   transition: background-color .2s ease, color .2s ease;
 }
-.dark body {
-  background:
-    radial-gradient(ellipse at 95% 0%, rgba(20, 184, 166, .12), transparent 36rem),
-    var(--background);
-}
-::selection { background: #bce8df; color: #123b36; }
-.dark ::selection { background: #285c55; color: #f0fdfa; }
+::selection { background: #d4d4d8; color: #18181b; }
+.dark ::selection { background: #52525b; color: #fafafa; }
 
-/* Identidade visual compartilhada: menos cinza, mais contraste e tons teal/azul. */
- .min-h-screen[class~="bg-gray-100"] {
-  background: linear-gradient(135deg, #f0faf8 0%, #f7fafc 52%, #eef6ff 100%);
-}
-.dark .min-h-screen[class~="dark:bg-[#3a3a3f]"] {
-  background: linear-gradient(135deg, #111b22 0%, #15232c 58%, #182b31 100%);
-}
-.rounded-2xl[class~="bg-white"] {
-  border-color: #d6e9e5;
-  box-shadow: 0 5px 18px rgba(20, 74, 72, .045);
-}
-.dark .rounded-2xl[class~="dark:bg-[#444449]"] {
-  background-color: #1c2a33;
-  border-color: #2b454c;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, .13);
-}
-.dark .rounded-2xl[class~="dark:bg-[#444449]"] h1,
-.dark .rounded-2xl[class~="dark:bg-[#444449]"] h2,
-.dark .rounded-2xl[class~="dark:bg-[#444449]"] h3 {
-  color: #f0fdfa;
-}
-.rounded-2xl[class~="bg-white"]:hover { border-color: #b9dcd5; }
-.dark .rounded-2xl[class~="dark:bg-[#444449]"]:hover { border-color: #3c666a; }
-
-a.bg-gray-900, button.bg-gray-900, input.bg-gray-900 {
-  background: linear-gradient(135deg, #0f9488, #087f8c);
-  box-shadow: 0 5px 12px rgba(13, 148, 136, .16);
-}
-a.bg-gray-900:hover, button.bg-gray-900:hover, input.bg-gray-900:hover {
-  background: linear-gradient(135deg, #0f766e, #155e75);
-}
-.dark a.bg-gray-900, .dark button.bg-gray-900, .dark input.bg-gray-900 {
-  background: linear-gradient(135deg, #0f9488, #087f8c);
-  color: #fff;
-}
-.dark a.bg-gray-900:hover, .dark button.bg-gray-900:hover, .dark input.bg-gray-900:hover {
-  background: linear-gradient(135deg, #0f766e, #155e75);
-}
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 select, textarea { transition: border-color .15s ease, box-shadow .15s ease; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
-  outline: 2px solid #14b8a6;
+  outline: 2px solid #71717a;
   outline-offset: 2px;
-}
-input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-select, textarea {
-  border-color: #c6e2dc;
-  background-color: #fbfefd;
-}
-.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-.dark select, .dark textarea {
-  border-color: #35515a;
-  background-color: #15252d;
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
 select:focus, textarea:focus {
-  border-color: #14b8a6;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, .13);
+  border-color: #71717a;
+  box-shadow: 0 0 0 3px rgba(113, 113, 122, .13);
 }
-table thead { background-color: #effaf7; }
-.dark table thead { background-color: #20363e; }
 table tbody tr { transition: background-color .15s ease; }
-::placeholder { color: #91a3a7; }
-.dark ::placeholder { color: #7f9a9e; }
+::placeholder { color: #a1a1aa; }
+.dark ::placeholder { color: #a1a1aa; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
