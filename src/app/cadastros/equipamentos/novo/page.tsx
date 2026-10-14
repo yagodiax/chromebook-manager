@@ -168,6 +168,8 @@ export default function CadastroPage() {
                 {campoDetalhe("memoriaRam", "Memória RAM", "Ex.: 8 GB")}
                 {campoDetalhe("armazenamento", "Armazenamento", "Ex.: SSD 256 GB")}
                 {campoDetalhe("sistemaOperacional", "Sistema operacional", "Ex.: Windows 11")}
+                {campoDetalhe("codigoModelo", "Código do modelo", "Ex.: 81S9, PU401LA")}
+                {campoDetalhe("mac", "Endereço MAC", "AA-BB-CC-DD-EE-FF")}
               </>}
               {tipo === "projetor" && <>
                 {campoDetalhe("tecnologia", "Tecnologia", "Ex.: DLP, LCD, LED")}
