@@ -147,14 +147,14 @@ export default function Sidebar() {
           </Link>
 
           <Link
-            href="/chromebooks/novo"
+            href="/cadastros/equipamentos/novo"
             className={`ml-4 block rounded-lg px-4 py-2.5 text-sm transition ${
-              pathname === "/chromebooks/novo"
+              pathname === "/cadastros/equipamentos/novo"
                 ? "bg-gray-200 font-medium text-gray-900 dark:bg-[#505057] dark:text-white"
                 : "text-gray-500 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-500 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >
-            + Novo Chromebook
+            + Cadastrar equipamento
           </Link>
 
           <Link href="/cadastros" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
