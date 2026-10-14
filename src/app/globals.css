@@ -4,24 +4,24 @@
 
 :root {
   color-scheme: light;
-  --background: #eeeeee;
+  --background: #e3e3e3;
   --foreground: #262626;
-  --surface: #f7f7f7;
-  --surface-muted: #e5e5e5;
-  --border: #d0d0d0;
+  --surface: #eeeeee;
+  --surface-muted: #d7d7d7;
+  --border: #c5c5c5;
   --muted: #666666;
-  --sidebar: #e2e2e2;
+  --sidebar: #dadada;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #303030;
+  --background: #2b2b2b;
   --foreground: #eeeeee;
-  --surface: #393939;
-  --surface-muted: #444444;
+  --surface: #383838;
+  --surface-muted: #464646;
   --border: #555555;
   --muted: #bdbdbd;
-  --sidebar: #292929;
+  --sidebar: #252525;
 }
 
 @theme inline {
@@ -122,7 +122,7 @@ aside [class*="text-rose-"], aside [class*="text-red-"] {
 [class*="border-pink-"], [class*="border-fuchsia-"], [class*="border-purple-"], [class*="border-violet-"],
 [class*="border-indigo-"], [class*="border-[#"] { border-color: var(--border) !important; }
 
-/* Painéis, campos e tabelas seguem o mesmo padrão neutro. */
+/* Três níveis de superfície: fundo, áreas de apoio e cards/campos. */
 [class*="bg-white"] { background-color: var(--surface) !important; }
 .dark [class*="dark:bg-white"] { background-color: var(--surface) !important; }
 [class*="bg-gray-100"], [class*="bg-slate-50"], [class*="bg-gray-50"] {
@@ -130,6 +130,11 @@ aside [class*="text-rose-"], aside [class*="text-red-"] {
 }
 .dark [class*="dark:bg-gray-100"], .dark [class*="dark:bg-slate-50"],
 .dark [class*="dark:bg-gray-50"] { background-color: var(--background) !important; }
+[class*="bg-gray-200"], [class*="bg-slate-100"], [class*="bg-zinc-100"] {
+  background-color: var(--surface-muted) !important;
+}
+.dark [class*="dark:bg-gray-200"], .dark [class*="dark:bg-slate-100"],
+.dark [class*="dark:bg-zinc-100"] { background-color: var(--surface-muted) !important; }
 [class*="border-white"] { border-color: var(--border) !important; }
 [class*="hover:bg-teal-"]:hover, [class*="hover:bg-cyan-"]:hover,
 [class*="hover:bg-sky-"]:hover, [class*="hover:bg-blue-"]:hover,
