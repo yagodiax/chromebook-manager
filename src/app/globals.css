@@ -143,3 +143,16 @@ table tbody tr { transition: background-color .15s ease; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Acabamento minimalista: tipografia padrão e sem efeitos decorativos exagerados. */
+body, body * {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+[class*="font-black"], [class*="font-extrabold"] { font-weight: 600 !important; }
+[class*="font-bold"] { font-weight: 600 !important; }
+[class*="tracking-"] { letter-spacing: normal !important; }
+[class*="uppercase"] { text-transform: none !important; }
+[class*="rounded-2xl"], [class*="rounded-3xl"], [class*="rounded-[28px]"] { border-radius: 10px !important; }
+[class*="shadow-"] { box-shadow: none !important; }
+[class*="blur-"] { filter: none !important; opacity: 0 !important; }
+
