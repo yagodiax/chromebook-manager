@@ -83,7 +83,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-gray-300 bg-gray-100 text-gray-900 transition-colors dark:border-[#3d3d42] dark:bg-[#29292d] dark:text-gray-100">
       <div className="border-b border-gray-300 px-6 py-6 dark:border-[#3d3d42]">
-        <h1 className="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
+        <h1 className="text-lg font-bold tracking-tight text-teal-800 dark:text-teal-100">
           Chromebook Manager
         </h1>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -97,7 +97,7 @@ export default function Sidebar() {
             href="/"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
               dashboardAtivo
-                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100"
                 : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >
@@ -108,7 +108,7 @@ export default function Sidebar() {
             href="/chromebooks"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
               chromebooksAtivo
-                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100"
                 : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >
@@ -119,7 +119,7 @@ export default function Sidebar() {
             href="/notebooks"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
               pathname.startsWith("/notebooks")
-                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100"
                 : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >
@@ -127,19 +127,19 @@ export default function Sidebar() {
           </Link>
 
           <Link href="/projetores" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/projetores") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname.startsWith("/projetores") ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Projetores</Link>
 
           <Link href="/catracas" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/catracas") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname.startsWith("/catracas") ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Catracas</Link>
 
           <Link href="/impressoras" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/impressoras") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname.startsWith("/impressoras") ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Impressoras</Link>
 
           <Link href="/equipamentos" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname === "/equipamentos" ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname === "/equipamentos" ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Todos os equipamentos</Link>
 
           <Link href="/cadastros/equipamentos/novo" className="ml-4 block rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-200 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-[#3d3d42] dark:hover:text-white">
@@ -158,18 +158,18 @@ export default function Sidebar() {
           </Link>
 
           <Link href="/cadastros" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/cadastros") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname.startsWith("/cadastros") ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Cadastros</Link>
 
           <Link href="/historico" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
-            pathname.startsWith("/historico") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            pathname.startsWith("/historico") ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
           }`}>Histórico</Link>
 
           <Link
             href="/relatorios/gastos"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
               relatoriosAtivo
-                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100"
                 : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >
@@ -182,7 +182,7 @@ export default function Sidebar() {
             href="/usuarios"
             className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
               usuariosAtivo
-                ? "bg-gray-300 text-gray-900 dark:bg-[#505057] dark:text-white"
+                ? "bg-teal-50 text-teal-800 dark:bg-[#203d3a] dark:text-teal-100"
                 : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
             }`}
           >

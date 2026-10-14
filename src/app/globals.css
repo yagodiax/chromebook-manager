@@ -3,19 +3,26 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f3f4f6;
-  --foreground: #111827;
+  color-scheme: light;
+  --background: #f5f7f7;
+  --foreground: #182326;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: #e6f4f1;
 }
 
 .dark {
-  --background: #3a3a3f;
-  --foreground: #f4f4f5;
+  color-scheme: dark;
+  --background: #292d31;
+  --foreground: #f1f5f4;
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-soft: #203d3a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -25,12 +32,80 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: #a8b8b6 transparent;
+}
+
 body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+::selection {
+  background: #bce8df;
+  color: #123b36;
+}
+
+.dark ::selection {
+  background: #285c55;
+  color: #f0fdfa;
+}
+
+/* Realce discreto para ações principais em todas as telas. */
+a.bg-gray-900,
+button.bg-gray-900,
+input.bg-gray-900 {
+  background-color: #0f766e;
+}
+
+a.bg-gray-900:hover,
+button.bg-gray-900:hover,
+input.bg-gray-900:hover {
+  background-color: #115e59;
+}
+
+.dark a.bg-gray-900,
+.dark button.bg-gray-900,
+.dark input.bg-gray-900 {
+  background-color: #0f766e;
+  color: #ffffff;
+}
+
+.dark a.bg-gray-900:hover,
+.dark button.bg-gray-900:hover,
+.dark input.bg-gray-900:hover {
+  background-color: #115e59;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
