@@ -45,7 +45,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-gray-300 bg-[#e2e2e2] text-gray-800 transition-colors dark:border-[#555555] dark:bg-[#292929] dark:text-gray-100">
       <div className="border-b border-gray-300 bg-[#e2e2e2] px-5 py-6 dark:border-[#555555] dark:bg-[#292929]">
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-400 bg-gray-200 text-lg font-bold text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">CM</div>
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-lg font-bold text-amber-300 dark:border-gray-500 dark:bg-gray-900 dark:text-amber-300">CM</div>
         <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Chromebook Manager</h1>
         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Central de equipamentos</p>
       </div>
