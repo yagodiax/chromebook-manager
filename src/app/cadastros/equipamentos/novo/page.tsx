@@ -162,6 +162,7 @@ export default function CadastroPage() {
               {tipo === "chromebook" && <>
                 {campoDetalhe("numeroChromebook", "Número do Chromebook", "Ex.: 17")}
                 {campoDetalhe("mac", "Endereço MAC", "AA:BB:CC:DD:EE:FF")}
+                {campoDetalhe("saudeBateria", "Saúde da bateria (%)", "Ex.: 75")}
               </>}
               {tipo === "notebook" && <>
                 {campoDetalhe("processador", "Processador", "Ex.: Intel Core i5")}

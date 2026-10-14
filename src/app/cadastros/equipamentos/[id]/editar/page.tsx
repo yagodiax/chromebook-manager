@@ -120,7 +120,7 @@ export default function EditarEquipamentoPage() {
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7 dark:border-[#505057] dark:bg-[#444449]">
         <h2 className="text-lg font-semibold text-gray-950 dark:text-white">Dados específicos — {tituloTipo}</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          {tipo === "chromebook" && <>{campoDetalhe("numeroChromebook", "Número do Chromebook", "Ex.: 17")}{campoDetalhe("mac", "Endereço MAC", "AA:BB:CC:DD:EE:FF")}</>}
+          {tipo === "chromebook" && <>{campoDetalhe("numeroChromebook", "Número do Chromebook", "Ex.: 17")}{campoDetalhe("mac", "Endereço MAC", "AA:BB:CC:DD:EE:FF")}{campoDetalhe("saudeBateria", "Saúde da bateria (%)", "Ex.: 75")}</>}
           {tipo === "notebook" && <>{campoDetalhe("processador", "Processador", "Ex.: Intel Core i5")}{campoDetalhe("memoriaRam", "Memória RAM", "Ex.: 8 GB")}{campoDetalhe("armazenamento", "Armazenamento", "Ex.: SSD 256 GB")}{campoDetalhe("sistemaOperacional", "Sistema operacional", "Ex.: Windows 11")}{campoDetalhe("codigoModelo", "Código do modelo", "Ex.: 81S9, PU401LA")}{campoDetalhe("mac", "Endereço MAC", "AA-BB-CC-DD-EE-FF")}</>}
           {tipo === "projetor" && <>{campoDetalhe("tecnologia", "Tecnologia", "Ex.: DLP, LCD, LED")}{campoDetalhe("conexoes", "Conexões", "Ex.: HDMI, VGA, USB")}</>}
           {tipo === "catraca" && <>{campoDetalhe("tipoControle", "Tipo de controle", "Ex.: biometria, cartão, facial")}{campoDetalhe("fabricanteControladora", "Fabricante/controladora", "Fabricante do sistema de controle")}</>}
