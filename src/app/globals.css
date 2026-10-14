@@ -4,22 +4,22 @@
 
 :root {
   color-scheme: light;
-  --background: #e3e3e3;
+  --background: #dedede;
   --foreground: #262626;
-  --surface: #eeeeee;
-  --surface-muted: #d7d7d7;
-  --border: #c5c5c5;
+  --surface: #e8e8e8;
+  --surface-muted: #cccccc;
+  --border: #bdbdbd;
   --muted: #666666;
-  --sidebar: #dadada;
+  --sidebar: #d2d2d2;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #2b2b2b;
+  --background: #292929;
   --foreground: #eeeeee;
-  --surface: #383838;
-  --surface-muted: #464646;
-  --border: #555555;
+  --surface: #353535;
+  --surface-muted: #414141;
+  --border: #505050;
   --muted: #bdbdbd;
   --sidebar: #252525;
 }
