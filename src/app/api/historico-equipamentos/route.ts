@@ -297,7 +297,7 @@ export async function PUT(request: Request) {
       await conexao.rollback();
       return erroJson("Registro não encontrado.", 404);
     }
-    if (existentes[0].equipamento_id !== equipamentoId) return erroJson("Não é permitido transferir um registro para outro equipamento.");
+    if (existentes[0].equipamento_id !== equipamentoId) { await conexao.rollback(); return erroJson("Não é permitido transferir um registro para outro equipamento."); }
 
     await conexao.execute<ResultSetHeader>(
       `UPDATE historico_equipamentos SET tipo = ?, categoria = ?, data_ocorrencia = ?, descricao = ?, observacao = ?, quem_realizou = ?, custo = ?, destino_reparo = ?, resultado = ?, status_final = ? WHERE id = ?`,
