@@ -7,6 +7,7 @@ export type TipoEquipamento = "chromebook" | "notebook" | "projetor" | "catraca"
 type Equipamento = { id: string; patrimonio: string; tipo: TipoEquipamento; fabricante: string; modelo: string; numeroSerie: string; localizacao: string; status: string; observacoes: string; detalhes: Record<string, unknown> };
 
 const NOMES: Record<TipoEquipamento, string> = { chromebook: "Chromebook", notebook: "Notebook", projetor: "Projetor", catraca: "Catraca", impressora: "Impressora" };
+const PLURAIS: Record<TipoEquipamento, string> = { chromebook: "Chromebooks", notebook: "Notebooks", projetor: "Projetores", catraca: "Catracas", impressora: "Impressoras" };
 const STATUS: Record<string, string> = { disponivel: "Disponível", "em-uso": "Em uso", "em-reparo": "Em reparo", inativo: "Inativo", "para-descarte": "Para descarte" };
 const campo = "rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none dark:border-[#55555c] dark:bg-[#333338] dark:text-white";
 
@@ -42,7 +43,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
     return tipoOk && (!termo || textoBusca.includes(termo)) && (statusFiltro === "todos" || item.status === statusFiltro);
   }), [equipamentos, tipoFiltro, busca, statusFiltro]);
 
-  const titulo = tipoFiltro ? NOMES[tipoFiltro] + "s" : "Todos os equipamentos";
+  const titulo = tipoFiltro ? PLURAIS[tipoFiltro] : "Todos os equipamentos";
 
   return (
     <div className="min-h-screen bg-gray-100 p-5 sm:p-8 dark:bg-[#3a3a3f]">
