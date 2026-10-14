@@ -2,173 +2,215 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Chromebook Manager — identidade visual institucional SEICE */
 :root {
   color-scheme: light;
-  --background: #dedede;
-  --foreground: #262626;
-  --surface: #e8e8e8;
-  --surface-muted: #cccccc;
-  --border: #bdbdbd;
-  --muted: #666666;
-  --sidebar: #d2d2d2;
+  --background: #f1f1ef;
+  --foreground: #292929;
+  --surface: #ffffff;
+  --surface-muted: #e6e6e3;
+  --border: #d1d1cc;
+  --muted: #686862;
+  --sidebar: #e7e7e3;
+  --brand-accent: #c18a00;
+  --brand-accent-hover: #a97800;
+  --brand-accent-soft: #f5eac8;
+  --danger: #a33a35;
+  --danger-soft: #f7e9e7;
+  --radius-panel: 12px;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #292929;
-  --foreground: #eeeeee;
-  --surface: #353535;
-  --surface-muted: #414141;
-  --border: #505050;
-  --muted: #bdbdbd;
-  --sidebar: #252525;
+  --background: #252525;
+  --foreground: #eeeeeb;
+  --surface: #30302f;
+  --surface-muted: #3a3a38;
+  --border: #4a4a46;
+  --muted: #b8b8b0;
+  --sidebar: #20201f;
+  --brand-accent: #e0b43d;
+  --brand-accent-hover: #f0c94e;
+  --brand-accent-soft: #49402a;
+  --danger: #e28c84;
+  --danger-soft: #492e2c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
 }
 
-html, body { min-height: 100%; }
-html { scroll-behavior: smooth; }
+* { box-sizing: border-box; }
+html { min-height: 100%; scroll-behavior: smooth; }
 body {
+  min-height: 100vh;
   margin: 0;
   background: var(--background);
   color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, [role="button"] { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .58; }
+a { color: inherit; }
+h1, h2, h3, h4 { color: var(--foreground); letter-spacing: -.015em; }
+::selection { background: var(--brand-accent-soft); color: var(--foreground); }
+::placeholder { color: var(--muted) !important; opacity: 1; }
+
+/* Fundos e superfícies: remove gradientes e paletas antigas inconsistentes. */
+[class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: var(--surface-muted) !important;
+  color: var(--foreground) !important;
+  box-shadow: none !important;
+}
+[class*="bg-white"], [class*="dark:bg-white"] {
+  background-color: var(--surface) !important;
+}
+[class*="bg-gray-50"], [class*="bg-gray-100"], [class*="bg-slate-50"], [class*="bg-zinc-50"] {
+  background-color: var(--background) !important;
+}
+[class*="bg-gray-200"], [class*="bg-gray-300"], [class*="bg-slate-100"], [class*="bg-zinc-100"] {
+  background-color: var(--surface-muted) !important;
+}
+.dark [class*="dark:bg-gray-50"], .dark [class*="dark:bg-gray-100"], .dark [class*="dark:bg-slate-50"] {
+  background-color: var(--background) !important;
+}
+.dark [class*="dark:bg-gray-200"], .dark [class*="dark:bg-gray-700"], .dark [class*="dark:bg-gray-800"] {
+  background-color: var(--surface-muted) !important;
 }
 
-/* Identidade visual neutra e consistente em todas as páginas. */
+/* Cores decorativas antigas viram tons neutros; amarelo fica reservado à marca. */
+[class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
+[class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-orange-"],
+[class*="bg-red-"], [class*="bg-rose-"], [class*="bg-pink-"], [class*="bg-fuchsia-"],
+[class*="bg-purple-"], [class*="bg-violet-"], [class*="bg-indigo-"] {
+  background-color: var(--surface-muted) !important;
+  background-image: none !important;
+  color: var(--foreground) !important;
+}
+.dark [class*="dark:bg-teal-"], .dark [class*="dark:bg-cyan-"], .dark [class*="dark:bg-sky-"],
+.dark [class*="dark:bg-blue-"], .dark [class*="dark:bg-emerald-"], .dark [class*="dark:bg-green-"],
+.dark [class*="dark:bg-orange-"], .dark [class*="dark:bg-red-"], .dark [class*="dark:bg-rose-"],
+.dark [class*="dark:bg-purple-"], .dark [class*="dark:bg-violet-"], .dark [class*="dark:bg-indigo-"] {
+  background-color: var(--surface-muted) !important;
+  color: var(--foreground) !important;
+}
+[class*="text-teal-"], [class*="text-cyan-"], [class*="text-sky-"], [class*="text-blue-"],
+[class*="text-emerald-"], [class*="text-green-"], [class*="text-lime-"], [class*="text-orange-"],
+[class*="text-purple-"], [class*="text-violet-"], [class*="text-indigo-"] {
+  color: var(--muted) !important;
+}
+.dark [class*="dark:text-teal-"], .dark [class*="dark:text-cyan-"], .dark [class*="dark:text-sky-"],
+.dark [class*="dark:text-blue-"], .dark [class*="dark:text-emerald-"], .dark [class*="dark:text-green-"],
+.dark [class*="dark:text-orange-"], .dark [class*="dark:text-purple-"], .dark [class*="dark:text-violet-"],
+.dark [class*="dark:text-indigo-"] { color: var(--muted) !important; }
+[class*="border-teal-"], [class*="border-cyan-"], [class*="border-sky-"], [class*="border-blue-"],
+[class*="border-emerald-"], [class*="border-green-"], [class*="border-lime-"], [class*="border-orange-"],
+[class*="border-purple-"], [class*="border-violet-"], [class*="border-indigo-"], [class*="border-rose-"] {
+  border-color: var(--border) !important;
+}
+
+/* Ações primárias com amarelo SEICE discreto e contraste alto. */
+button[class*="bg-teal-"], button[class*="bg-cyan-"], button[class*="bg-sky-"],
+button[class*="bg-blue-"], button[class*="bg-emerald-"], button[class*="bg-green-"],
+button[class*="bg-indigo-"], button[class*="bg-violet-"], button[class*="bg-gradient"],
+a[class*="bg-teal-"], a[class*="bg-cyan-"], a[class*="bg-sky-"], a[class*="bg-blue-"],
+a[class*="bg-emerald-"], a[class*="bg-green-"], a[class*="bg-indigo-"], a[class*="bg-violet-"],
+a[class*="bg-gradient"] {
+  background: var(--brand-accent) !important;
+  color: #211b0e !important;
+  border-color: var(--brand-accent) !important;
+  box-shadow: none !important;
+}
+button[class*="bg-teal-"]:hover, button[class*="bg-cyan-"]:hover, button[class*="bg-blue-"]:hover,
+button[class*="bg-emerald-"]:hover, button[class*="bg-green-"]:hover, button[class*="bg-gradient"]:hover,
+a[class*="bg-teal-"]:hover, a[class*="bg-cyan-"]:hover, a[class*="bg-blue-"]:hover,
+a[class*="bg-emerald-"]:hover, a[class*="bg-green-"]:hover, a[class*="bg-gradient"]:hover {
+  background: var(--brand-accent-hover) !important;
+}
+[class*="bg-amber-"], [class*="bg-yellow-"] {
+  background-color: var(--brand-accent-soft) !important;
+  color: var(--foreground) !important;
+}
+[class*="text-amber-"], [class*="text-yellow-"] { color: var(--brand-accent-hover) !important; }
+.dark [class*="text-amber-"], .dark [class*="text-yellow-"] { color: var(--brand-accent) !important; }
+[class*="border-amber-"], [class*="border-yellow-"] { border-color: var(--brand-accent) !important; }
+
+/* Cartões, painéis, tabelas e formulários com o mesmo acabamento. */
+[class*="rounded-3xl"], [class*="rounded-2xl"] { border-radius: var(--radius-panel) !important; }
+[class*="shadow-2xl"], [class*="shadow-xl"], [class*="shadow-lg"] { box-shadow: 0 1px 3px rgb(0 0 0 / .08) !important; }
+.dark [class*="shadow-2xl"], .dark [class*="shadow-xl"], .dark [class*="shadow-lg"] {
+  box-shadow: 0 1px 3px rgb(0 0 0 / .22) !important;
+}
+input, select, textarea {
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  border-radius: 8px;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--brand-accent) !important;
+  outline-offset: 1px;
+  border-color: var(--brand-accent) !important;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 2px;
+}
+table { border-collapse: collapse; }
+thead { background: var(--surface-muted) !important; color: var(--foreground) !important; }
+th { font-weight: 700; }
+th, td { border-color: var(--border) !important; }
+tr { border-color: var(--border) !important; }
+hr { border-color: var(--border); }
+
+/* Navegação e estrutura global. */
 aside {
-  background-color: var(--sidebar) !important;
+  background: var(--sidebar) !important;
   color: var(--foreground);
   border-color: var(--border) !important;
 }
-.dark aside { background-color: var(--sidebar) !important; }
 aside > div:first-child {
   background: var(--sidebar) !important;
   border-color: var(--border) !important;
 }
+aside a { border-radius: 8px !important; }
 aside a[aria-current="page"] {
-  background: var(--surface-muted) !important;
-  background-image: none !important;
-  border-color: var(--border) !important;
+  background: var(--brand-accent-soft) !important;
   color: var(--foreground) !important;
-  box-shadow: none !important;
-}
-aside a[aria-current="page"] span { color: var(--foreground) !important; }
-aside a, aside button { transition: background-color .15s ease, color .15s ease; }
-aside a:hover, aside button:hover {
-  background: var(--surface-muted) !important;
-  color: var(--foreground) !important;
-}
-aside [class*="bg-gradient"] {
-  background: var(--surface-muted) !important;
-  color: var(--foreground) !important;
-  box-shadow: none !important;
-}
-aside [class*="text-teal-"], aside [class*="text-cyan-"],
-aside [class*="text-violet-"], aside [class*="text-indigo-"],
-aside [class*="text-rose-"], aside [class*="text-red-"] {
-  color: var(--foreground) !important;
-}
-
-/* Neutraliza cores decorativas antigas sem mudar a estrutura nem as funções. */
-[class*="bg-gradient"] {
-  background-image: none !important;
-  box-shadow: none;
-}
-[class*="bg-teal-"], [class*="bg-cyan-"], [class*="bg-sky-"], [class*="bg-blue-"],
-[class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-lime-"], [class*="bg-amber-"],
-[class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-red-"], [class*="bg-rose-"],
-[class*="bg-pink-"], [class*="bg-fuchsia-"], [class*="bg-purple-"], [class*="bg-violet-"],
-[class*="bg-indigo-"], [class*="bg-teal/"], [class*="bg-cyan/"], [class*="bg-sky/"],
-[class*="bg-blue/"], [class*="bg-emerald/"], [class*="bg-green/"], [class*="bg-amber/"],
-[class*="bg-orange/"], [class*="bg-red/"], [class*="bg-rose/"], [class*="bg-purple/"],
-[class*="bg-violet/"], [class*="bg-indigo/"], [class*="bg-[#"] {
-  background-color: var(--surface-muted) !important;
-  background-image: none !important;
-  color: var(--foreground) !important;
-}
-.dark [class*="bg-teal-"], .dark [class*="bg-cyan-"], .dark [class*="bg-sky-"],
-.dark [class*="bg-blue-"], .dark [class*="bg-emerald-"], .dark [class*="bg-green-"],
-.dark [class*="bg-lime-"], .dark [class*="bg-amber-"], .dark [class*="bg-yellow-"],
-.dark [class*="bg-orange-"], .dark [class*="bg-red-"], .dark [class*="bg-rose-"],
-.dark [class*="bg-pink-"], .dark [class*="bg-fuchsia-"], .dark [class*="bg-purple-"],
-.dark [class*="bg-violet-"], .dark [class*="bg-indigo-"], .dark [class*="bg-[#"] {
-  background-color: var(--surface) !important;
-  color: var(--foreground) !important;
-}
-[class*="from-"], [class*="via-"], [class*="to-"] {
-  --tw-gradient-from: transparent !important;
-  --tw-gradient-to: transparent !important;
-  --tw-gradient-stops: transparent !important;
-}
-[class*="text-teal-"], [class*="text-cyan-"], [class*="text-sky-"], [class*="text-blue-"],
-[class*="text-emerald-"], [class*="text-green-"], [class*="text-lime-"], [class*="text-amber-"],
-[class*="text-yellow-"], [class*="text-orange-"], [class*="text-red-"], [class*="text-rose-"],
-[class*="text-pink-"], [class*="text-fuchsia-"], [class*="text-purple-"], [class*="text-violet-"],
-[class*="text-indigo-"] { color: #525252 !important; }
-.dark [class*="text-teal-"], .dark [class*="text-cyan-"], .dark [class*="text-sky-"],
-.dark [class*="text-blue-"], .dark [class*="text-emerald-"], .dark [class*="text-green-"],
-.dark [class*="text-lime-"], .dark [class*="text-amber-"], .dark [class*="text-yellow-"],
-.dark [class*="text-orange-"], .dark [class*="text-red-"], .dark [class*="text-rose-"],
-.dark [class*="text-pink-"], .dark [class*="text-fuchsia-"], .dark [class*="text-purple-"],
-.dark [class*="text-violet-"], .dark [class*="text-indigo-"] { color: #d4d4d4 !important; }
-[class*="border-teal-"], [class*="border-cyan-"], [class*="border-sky-"], [class*="border-blue-"],
-[class*="border-emerald-"], [class*="border-green-"], [class*="border-lime-"], [class*="border-amber-"],
-[class*="border-yellow-"], [class*="border-orange-"], [class*="border-red-"], [class*="border-rose-"],
-[class*="border-pink-"], [class*="border-fuchsia-"], [class*="border-purple-"], [class*="border-violet-"],
-[class*="border-indigo-"], [class*="border-[#"] { border-color: var(--border) !important; }
-
-/* Três níveis de superfície: fundo, áreas de apoio e cards/campos. */
-[class*="bg-white"] { background-color: var(--surface) !important; }
-.dark [class*="dark:bg-white"] { background-color: var(--surface) !important; }
-[class*="bg-gray-100"], [class*="bg-slate-50"], [class*="bg-gray-50"] {
-  background-color: var(--background) !important;
-}
-.dark [class*="dark:bg-gray-100"], .dark [class*="dark:bg-slate-50"],
-.dark [class*="dark:bg-gray-50"] { background-color: var(--background) !important; }
-[class*="bg-gray-200"], [class*="bg-slate-100"], [class*="bg-zinc-100"] {
-  background-color: var(--surface-muted) !important;
-}
-.dark [class*="dark:bg-gray-200"], .dark [class*="dark:bg-slate-100"],
-.dark [class*="dark:bg-zinc-100"] { background-color: var(--surface-muted) !important; }
-[class*="border-white"] { border-color: var(--border) !important; }
-[class*="hover:bg-teal-"]:hover, [class*="hover:bg-cyan-"]:hover,
-[class*="hover:bg-sky-"]:hover, [class*="hover:bg-blue-"]:hover,
-[class*="hover:bg-emerald-"]:hover, [class*="hover:bg-green-"]:hover,
-[class*="hover:bg-amber-"]:hover, [class*="hover:bg-red-"]:hover,
-[class*="hover:bg-violet-"]:hover, [class*="hover:bg-rose-"]:hover {
-  background-color: var(--surface-muted) !important;
-}
-input, select, textarea {
-  background-color: var(--surface) !important;
-  color: var(--foreground) !important;
-  border-color: var(--border) !important;
-}
-input:focus-visible, select:focus-visible, textarea:focus-visible,
-button:focus-visible, a:focus-visible {
-  outline-color: #777777;
-  outline-offset: 2px;
-}
-::placeholder { color: var(--muted); }
-
-
-/* Acento institucional discreto inspirado no amarelo e no grafite da identidade SEICE. */
-:root {
-  --brand-accent: #c18a00;
-  --brand-accent-soft: #f3e8c6;
-}
-.dark {
-  --brand-accent: #e4b83f;
-  --brand-accent-soft: #51462b;
-}
-aside a[aria-current="page"] {
+  border-color: var(--brand-accent) !important;
   box-shadow: inset 3px 0 0 var(--brand-accent) !important;
 }
-aside a[aria-current="page"] span:first-child {
-  background-color: var(--brand-accent-soft) !important;
+aside a[aria-current="page"] span { color: var(--foreground) !important; }
+aside a:hover, aside button:hover {
+  background-color: var(--surface-muted) !important;
   color: var(--foreground) !important;
+}
+aside [class*="bg-gray-300"], aside [class*="bg-gray-400"] {
+  background-color: var(--surface-muted) !important;
+}
+aside [class*="text-red-"], aside [class*="text-rose-"] { color: var(--danger) !important; }
+
+/* Alertas de erro continuam claramente identificáveis sem cores berrantes. */
+[role="alert"], [class*="bg-rose-50"], [class*="bg-red-50"] {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border)) !important;
+  background-color: var(--danger-soft) !important;
+  color: var(--danger) !important;
+}
+.dark [role="alert"], .dark [class*="dark:bg-rose-950"], .dark [class*="dark:bg-red-950"] {
+  background-color: var(--danger-soft) !important;
+  color: var(--danger) !important;
+}
+
+@media (max-width: 760px) {
+  body { font-size: 13px; }
 }
