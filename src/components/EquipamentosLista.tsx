@@ -107,7 +107,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                 <tbody className="divide-y divide-gray-100 dark:divide-[#55555c]">
                   {lista.map((item) => (
                     <tr key={item.id} role="link" tabIndex={0} aria-label={`Editar ${NOMES[item.tipo]} ${item.patrimonio || item.id}`}
-                      onClick={() => router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`)}
+                      onClick={() => router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}`)}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`); } }}
                       className="cursor-pointer hover:bg-teal-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-gray-500 dark:hover:bg-[#20363e]">
                       {tipoFiltro === "chromebook" ? (
@@ -137,7 +137,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                       </td>
                       <td className={td}>
                         <div className="flex justify-end gap-1.5">
-                          <Link href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-[#606066] dark:text-gray-100 dark:hover:bg-[#505057]">Editar</Link>
+                          <Link href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-[#606066] dark:text-gray-100 dark:hover:bg-[#505057]">Detalhes</Link><Link href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-[#606066] dark:text-gray-100 dark:hover:bg-[#505057]">Editar</Link>
                           <button type="button" onClick={(e) => { e.stopPropagation(); void excluirEquipamento(item); }} disabled={carregando} className="inline-flex items-center rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40">Excluir</button>
                         </div>
                       </td>
@@ -148,7 +148,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
             </div>
           )}
         </div>
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">Exibindo {lista.length} equipamento(s). Clique em uma linha para editar e ver os demais detalhes.</p>
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">Exibindo {lista.length} equipamento(s). Clique em uma linha para ver os detalhes e o histórico de manutenção.</p>
       </div>
     </div>
   );
