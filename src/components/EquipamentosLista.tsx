@@ -38,12 +38,28 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
     return () => { ativo = false; };
   }, []);
 
-  const lista = useMemo(() => equipamentos.filter((item) => {
-    const tipoOk = !tipoFiltro || item.tipo === tipoFiltro;
-    const termo = busca.trim().toLocaleLowerCase("pt-BR");
-    const textoBusca = [item.id, item.patrimonio, item.fabricante, item.modelo, item.numeroSerie, item.localizacao, item.observacoes, String(item.detalhes?.numeroChromebook ?? ""), String(item.detalhes?.mac ?? ""), String(item.detalhes?.conexao ?? ""), String(item.detalhes?.enderecoIp ?? ""), String(item.detalhes?.paginasImpressas ?? ""), String(item.detalhes?.codigoModelo ?? ""), String(item.detalhes?.saudeBateria ?? "")].join(" ").toLocaleLowerCase("pt-BR");
-    return tipoOk && (!termo || textoBusca.includes(termo)) && (statusFiltro === "todos" || item.status === statusFiltro);
-  }), [equipamentos, tipoFiltro, busca, statusFiltro]);
+  const lista = useMemo(() => {
+    const filtrados = equipamentos.filter((item) => {
+      const tipoOk = !tipoFiltro || item.tipo === tipoFiltro;
+      const termo = busca.trim().toLocaleLowerCase("pt-BR");
+      const textoBusca = [item.id, item.patrimonio, item.fabricante, item.modelo, item.numeroSerie, item.localizacao, item.observacoes, String(item.detalhes?.numeroChromebook ?? ""), String(item.detalhes?.mac ?? ""), String(item.detalhes?.conexao ?? ""), String(item.detalhes?.enderecoIp ?? ""), String(item.detalhes?.paginasImpressas ?? ""), String(item.detalhes?.codigoModelo ?? ""), String(item.detalhes?.saudeBateria ?? "")].join(" ").toLocaleLowerCase("pt-BR");
+      return tipoOk && (!termo || textoBusca.includes(termo)) && (statusFiltro === "todos" || item.status === statusFiltro);
+    });
+
+    const ordemTipos: TipoEquipamento[] = ["chromebook", "notebook", "projetor", "catraca", "impressora"];
+    const numeroChromebook = (item: Equipamento) => {
+      const numero = String(item.detalhes?.numeroChromebook ?? item.patrimonio.replace("CHROME-", ""));
+      const valor = Number.parseInt(numero, 10);
+      return Number.isFinite(valor) ? valor : Number.MAX_SAFE_INTEGER;
+    };
+
+    return filtrados.sort((a, b) => {
+      if (a.tipo === "chromebook" && b.tipo === "chromebook") {
+        return numeroChromebook(a) - numeroChromebook(b);
+      }
+      return ordemTipos.indexOf(a.tipo) - ordemTipos.indexOf(b.tipo);
+    });
+  }, [equipamentos, tipoFiltro, busca, statusFiltro]);
 
   async function excluirEquipamento(item: Equipamento) {
     const identificacao = [item.patrimonio, item.fabricante, item.modelo].filter(Boolean).join(" — ") || item.id;
@@ -98,7 +114,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                     {tipoFiltro === "chromebook" ? (
                       <><th className={th}>Chromebook</th><th className={th}>MAC</th><th className={th}>Saúde da bateria</th><th className={th}>Localização</th></>
                     ) : (
-                      <><th className={th}>Equipamento</th>{!tipoFiltro && <th className={th}>Patrimônio</th>}<th className={th}>Modelo</th><th className={th}>Localização</th>{tipoFiltro === "projetor" && <th className={th}>Potência</th>}</>
+                      <><th className={th}>Equipamento</th><th className={th}>Modelo</th><th className={th}>Localização</th>{tipoFiltro === "projetor" && <th className={th}>Potência</th>}</>
                     )}
                     <th className={th}>Status</th>
                     <th className={th + " text-right"}>Ações</th>
@@ -123,10 +139,15 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                       ) : (
                         <>
                           <td className={td}>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{NOMES[item.tipo]}</p>
-                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{item.id}</p>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">
+                              {item.tipo === "chromebook"
+                                ? `Chromebook Nº ${String(item.detalhes?.numeroChromebook ?? item.patrimonio.replace("CHROME-", ""))}`
+                                : NOMES[item.tipo]}
+                            </p>
+                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                              {item.tipo === "chromebook" ? `MAC: ${String(item.detalhes?.mac ?? "—")}` : item.id}
+                            </p>
                           </td>
-                          {!tipoFiltro && <td className={td}>{item.patrimonio || "—"}</td>}
                           <td className={td}>{[item.fabricante, item.modelo].filter(Boolean).join(" ") || "—"}</td>
                           <td className={td}>{item.localizacao || "—"}</td>
                           {tipoFiltro === "projetor" && <td className={td + " whitespace-nowrap"}>{String(item.detalhes?.potencia ?? "—")}{item.detalhes?.potenciaFicticia === true ? <span className="ml-1 text-xs text-amber-700 dark:text-amber-300">(fictícia)</span> : null}</td>}
