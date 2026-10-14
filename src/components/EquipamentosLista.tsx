@@ -108,7 +108,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                   {lista.map((item) => (
                     <tr key={item.id} role="link" tabIndex={0} aria-label={`Editar ${NOMES[item.tipo]} ${item.patrimonio || item.id}`}
                       onClick={() => router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}`)}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`); } }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/cadastros/equipamentos/${encodeURIComponent(item.id)}`); } }}
                       className="cursor-pointer hover:bg-teal-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-gray-500 dark:hover:bg-[#20363e]">
                       {tipoFiltro === "chromebook" ? (
                         <>
