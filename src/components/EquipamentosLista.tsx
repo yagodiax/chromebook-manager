@@ -130,7 +130,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                         <>
                           <td className={td}>
                             <p className="font-semibold text-gray-900 dark:text-gray-100">Nº {String(item.detalhes?.numeroChromebook ?? item.patrimonio.replace("CHROME-", ""))}</p>
-                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{[item.fabricante, item.modelo].filter(Boolean).join(" ") || String(item.detalhes?.codigoModelo ?? "Modelo não informado")}</p>
+                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{(item.modelo && item.modelo !== item.localizacao ? item.modelo : String(item.detalhes?.codigoModelo ?? "")) || "Modelo não informado"}</p>
                           </td>
                           <td className={td + " whitespace-nowrap font-mono text-xs"}>{String(item.detalhes?.mac ?? "—")}</td>
                           <td className={td + " whitespace-nowrap"}>{item.detalhes?.saudeBateria == null || item.detalhes?.saudeBateria === "" ? "—" : `${String(item.detalhes.saudeBateria)}%`}</td>
@@ -145,7 +145,7 @@ export default function EquipamentosLista({ tipoFiltro }: { tipoFiltro?: TipoEqu
                                 : NOMES[item.tipo]}
                             </p>
                             <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                              {item.tipo === "chromebook" ? ([item.fabricante, item.modelo].filter(Boolean).join(" ") || String(item.detalhes?.codigoModelo ?? "Modelo não informado")) : item.id}
+                              {item.tipo === "chromebook" ? ((item.modelo && item.modelo !== item.localizacao ? item.modelo : String(item.detalhes?.codigoModelo ?? "")) || "Modelo não informado") : item.id}
                             </p>
                           </td>
                           <td className={td}>{item.tipo === "chromebook" ? String(item.detalhes?.mac ?? "—") : [item.fabricante, item.modelo].filter(Boolean).join(" ") || "—"}</td>
