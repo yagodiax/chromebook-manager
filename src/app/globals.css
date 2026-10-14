@@ -154,3 +154,21 @@ button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
 ::placeholder { color: var(--muted); }
+
+
+/* Acento institucional discreto inspirado no amarelo e no grafite da identidade SEICE. */
+:root {
+  --brand-accent: #c18a00;
+  --brand-accent-soft: #f3e8c6;
+}
+.dark {
+  --brand-accent: #e4b83f;
+  --brand-accent-soft: #51462b;
+}
+aside a[aria-current="page"] {
+  box-shadow: inset 3px 0 0 var(--brand-accent) !important;
+}
+aside a[aria-current="page"] span:first-child {
+  background-color: var(--brand-accent-soft) !important;
+  color: var(--foreground) !important;
+}
