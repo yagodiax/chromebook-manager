@@ -116,6 +116,37 @@ export default function Sidebar() {
           </Link>
 
           <Link
+            href="/notebooks"
+            className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+              pathname.startsWith("/notebooks")
+                ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white"
+                : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+            }`}
+          >
+            Notebooks
+          </Link>
+
+          <Link href="/projetores" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname.startsWith("/projetores") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Projetores</Link>
+
+          <Link href="/catracas" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname.startsWith("/catracas") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Catracas</Link>
+
+          <Link href="/impressoras" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname.startsWith("/impressoras") ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Impressoras</Link>
+
+          <Link href="/equipamentos" className={`flex items-center rounded-lg px-4 py-3 text-sm font-medium transition ${
+            pathname === "/equipamentos" ? "bg-gray-200 text-gray-900 dark:bg-[#505057] dark:text-white" : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#3d3d42] dark:hover:text-gray-100"
+          }`}>Todos os equipamentos</Link>
+
+          <Link href="/cadastros/equipamentos/novo" className="ml-4 block rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-200 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-[#3d3d42] dark:hover:text-white">
+            + Cadastrar equipamento
+          </Link>
+
+          <Link
             href="/chromebooks/novo"
             className={`ml-4 block rounded-lg px-4 py-2.5 text-sm transition ${
               pathname === "/chromebooks/novo"
