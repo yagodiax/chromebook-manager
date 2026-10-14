@@ -36,6 +36,7 @@ export default function Sidebar() {
     { href: "/catracas", label: "Catracas", icon: "↔", active: pathname.startsWith("/catracas") },
     { href: "/impressoras", label: "Impressoras", icon: "▤", active: pathname.startsWith("/impressoras") },
     { href: "/equipamentos", label: "Todos os equipamentos", icon: "▦", active: pathname === "/equipamentos" },
+    { href: "/em-reparo", label: "Em reparo", icon: "⚒", active: pathname.startsWith("/em-reparo") },
     { href: "/cadastros", label: "Cadastros", icon: "＋", active: pathname === "/cadastros" || pathname.startsWith("/cadastros/") },
     { href: "/historico", label: "Histórico", icon: "◷", active: pathname.startsWith("/historico") },
     { href: "/relatorios/gastos", label: "Relatório de gastos", icon: "↗", active: pathname.startsWith("/relatorios") },
