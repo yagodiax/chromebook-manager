@@ -256,3 +256,65 @@ export async function POST(request: Request) {
     conexao.release();
   }
 }
+
+export async function PUT(request: Request) {
+  const falha = await verificarAutenticacao();
+  if (falha) return falha;
+  const conexao = await pool.getConnection();
+  try {
+    const entradaDesconhecida: unknown = await request.json();
+    if (!entradaDesconhecida || typeof entradaDesconhecida !== "object" || Array.isArray(entradaDesconhecida)) return erroJson("Os dados enviados são inválidos.");
+    const body = entradaDesconhecida as Record<string, unknown>;
+    const id = texto(body.id);
+    const equipamentoId = texto(body.equipamentoId);
+    const tipo = texto(body.tipo);
+    const categoria = texto(body.categoria);
+    const data = texto(body.data);
+    const descricao = texto(body.descricao);
+    const observacao = texto(body.observacao);
+    const quemRealizou = texto(body.quemRealizou);
+    const destinoReparo = texto(body.destinoReparo);
+    const resultado = texto(body.resultado);
+    const statusFinal = texto(body.statusFinal);
+    const custo = body.custo === undefined || body.custo === null || body.custo === "" ? 0 : Number(body.custo);
+
+    if (!id) return erroJson("Informe o ID do registro.");
+    if (!equipamentoId) return erroJson("O equipamento é obrigatório.");
+    if (!(TIPOS as readonly string[]).includes(tipo)) return erroJson("Tipo de registro inválido.");
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(data) || Number.isNaN(new Date(data + "T00:00:00Z").getTime())) return erroJson("Informe uma data válida.");
+    if (!descricao) return erroJson("Preencha a descrição.");
+    if (descricao.length > 60000 || observacao.length > 60000 || resultado.length > 60000) return erroJson("Um dos textos ultrapassa o tamanho permitido.");
+    if (!Number.isFinite(custo) || custo < 0 || custo > 99999999.99) return erroJson("Informe um custo válido.");
+    if (categoria && !(CATEGORIAS as readonly string[]).includes(categoria)) return erroJson("Categoria inválida.");
+    if (tipo === "envio-para-reparo" && !destinoReparo) return erroJson("Informe a assistência ou empresa de reparo.");
+    if (tipo === "retorno-de-reparo" && (!statusFinal || !(STATUS_FINAIS as readonly string[]).includes(statusFinal))) return erroJson("Selecione o status do equipamento após o retorno.");
+
+    await conexao.beginTransaction();
+    const [existentes] = await conexao.execute<(RowDataPacket & { id: string; equipamento_id: string })[]>(
+      "SELECT id, equipamento_id FROM historico_equipamentos WHERE id = ? FOR UPDATE", [id],
+    );
+    if (!existentes.length) {
+      await conexao.rollback();
+      return erroJson("Registro não encontrado.", 404);
+    }
+    if (existentes[0].equipamento_id !== equipamentoId) return erroJson("Não é permitido transferir um registro para outro equipamento.");
+
+    await conexao.execute<ResultSetHeader>(
+      `UPDATE historico_equipamentos SET tipo = ?, categoria = ?, data_ocorrencia = ?, descricao = ?, observacao = ?, quem_realizou = ?, custo = ?, destino_reparo = ?, resultado = ?, status_final = ? WHERE id = ?`,
+      [tipo, categoria || null, data, descricao, observacao || null, quemRealizou || null, custo, destinoReparo || null, resultado || null, statusFinal || null, id],
+    );
+    if (tipo === "envio-para-reparo") {
+      await conexao.execute<ResultSetHeader>("UPDATE equipamentos SET status = 'em-reparo' WHERE id = ?", [equipamentoId]);
+    } else if (tipo === "retorno-de-reparo") {
+      await conexao.execute<ResultSetHeader>("UPDATE equipamentos SET status = ? WHERE id = ?", [statusFinal, equipamentoId]);
+    }
+    await conexao.commit();
+    return NextResponse.json({ id, mensagem: "Registro atualizado com sucesso." }, { headers: { "Cache-Control": "no-store" } });
+  } catch (erro) {
+    try { await conexao.rollback(); } catch { /* transação não iniciada */ }
+    console.error("Erro ao editar registro do histórico universal:", erro);
+    return erroJson("Não foi possível atualizar o registro do histórico.", 500);
+  } finally {
+    conexao.release();
+  }
+}
