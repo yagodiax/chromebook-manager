@@ -63,10 +63,10 @@ export default function Sidebar() {
         <div className="space-y-1">
           {links.map((item) => (
             <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}
-              className={\`group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-all duration-150 \${item.active
+              className={`group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition-all duration-150 ${item.active
                 ? "border-teal-600/15 bg-gradient-to-r from-teal-600 to-cyan-600 text-white shadow-md shadow-teal-900/15"
-                : "border-transparent text-slate-600 hover:border-teal-700/10 hover:bg-white/80 hover:text-teal-900 dark:text-slate-300 dark:hover:bg-[#203b43] dark:hover:text-teal-100"}\`}>
-              <span className={\`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base \${item.active ? "bg-white/15 text-white" : "bg-teal-700/5 text-teal-800 group-hover:bg-teal-600/10 dark:bg-white/5 dark:text-teal-200"}\`}>{item.icon}</span>
+                : "border-transparent text-slate-600 hover:border-teal-700/10 hover:bg-white/80 hover:text-teal-900 dark:text-slate-300 dark:hover:bg-[#203b43] dark:hover:text-teal-100"}`}>
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base ${item.active ? "bg-white/15 text-white" : "bg-teal-700/5 text-teal-800 group-hover:bg-teal-600/10 dark:bg-white/5 dark:text-teal-200"}`}>{item.icon}</span>
               <span>{item.label}</span>
               {item.active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white" />}
             </Link>
