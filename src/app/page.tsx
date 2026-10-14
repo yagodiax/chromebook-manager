@@ -68,6 +68,15 @@ export default function Home() {
     .filter((item) => item.tipo === "retorno-de-reparo")
     .reduce((total, item) => total + (Number(item.custo) || 0), 0);
 
+  const maioresGastos = useMemo(() => {
+    const mapa = new Map<string, { id: string; nome: string; tipo: string; modelo: string; total: number; reparos: number }>();
+    historico.filter((item) => item.tipo === "retorno-de-reparo").forEach((item) => {
+      const atual = mapa.get(item.equipamentoId) || { id: item.equipamentoId, nome: item.equipamento.patrimonio || item.equipamentoId, tipo: TIPOS[item.equipamento.tipo] || item.equipamento.tipo, modelo: [item.equipamento.fabricante, item.equipamento.modelo].filter(Boolean).join(" "), total: 0, reparos: 0 };
+      atual.total += Number(item.custo) || 0; atual.reparos += 1; mapa.set(item.equipamentoId, atual);
+    });
+    return Array.from(mapa.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [historico]);
+
   const cards = [
     { titulo: "Equipamentos cadastrados", valor: equipamentos.length, descricao: "Total de itens no inventário", icone: "▦" },
     { titulo: "Em uso", valor: emUso, descricao: "Equipamentos em utilização", icone: "✓" },
@@ -168,6 +177,11 @@ export default function Home() {
               </div>
             )}
           </article>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Financeiro</p><h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Equipamentos com maior gasto em reparos</h2><p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Ranking baseado nos custos registrados nos retornos da assistência.</p></div><Link href="/relatorios/gastos" className="rounded-md px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700">Ver relatório →</Link></div>
+          {maioresGastos.length === 0 ? <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Ainda não há custos de reparos registrados.</p> : <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">{maioresGastos.map((item, index) => <div key={item.id} className="flex items-center gap-3 py-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">{String(index + 1).padStart(2, "0")}</span><div className="min-w-0 flex-1"><p className="truncate font-semibold text-gray-900 dark:text-gray-100">{item.nome}</p><p className="truncate text-xs text-gray-500 dark:text-gray-400">{item.tipo}{item.modelo ? " · " + item.modelo : ""} · {item.reparos} reparo(s)</p></div><strong className="whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">{carregando ? "—" : moeda(item.total)}</strong></div>)}</div>}
         </section>
 
         <section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
