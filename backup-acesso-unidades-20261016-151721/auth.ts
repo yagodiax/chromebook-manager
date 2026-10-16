@@ -1,0 +1,180 @@
+
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  scryptSync,
+  timingSafeEqual,
+} from "node:crypto";
+import { cookies } from "next/headers";
+import type { RowDataPacket } from "mysql2/promise";
+import { pool } from "@/lib/db";
+
+const DURACAO_SESSAO_DIAS = 7;
+
+export type PerfilUsuario =
+  | "admin_geral"
+  | "admin_unidade"
+  | "usuario"
+  | "admin";
+
+export type UnidadeId = "CE" | "JP";
+
+export interface UsuarioAutenticado {
+  id: string;
+  nome: string;
+  usuario: string;
+  perfil: PerfilUsuario | string;
+  unidade_id: UnidadeId | string | null;
+}
+
+interface UsuarioSessaoRow extends RowDataPacket {
+  id: string;
+  nome: string;
+  usuario: string;
+  perfil: string;
+  unidade_id: string | null;
+}
+
+export function gerarHashSenha(senha: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(senha, salt, 64).toString("hex");
+
+  return `${salt}:${hash}`;
+}
+
+export function verificarSenha(senha: string, senhaHash: string) {
+  const [salt, hashArmazenado] = senhaHash.split(":");
+
+  if (!salt || !hashArmazenado) {
+    return false;
+  }
+
+  try {
+    const hashCalculado = scryptSync(senha, salt, 64);
+    const hashEsperado = Buffer.from(hashArmazenado, "hex");
+
+    return (
+      hashCalculado.length === hashEsperado.length &&
+      timingSafeEqual(hashCalculado, hashEsperado)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function criarHashToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function criarSessao(usuarioId: string) {
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = criarHashToken(token);
+
+  const expiraEm = new Date(Date.now() + DURACAO_SESSAO_DIAS * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
+
+  await pool.execute(
+    `INSERT INTO sessoes (token_hash, usuario_id, expira_em)
+     VALUES (?, ?, ?)`,
+    [tokenHash, usuarioId, expiraEm],
+  );
+
+  return token;
+}
+
+export async function criarAdministrador(
+  nome: string,
+  usuario: string,
+  senha: string,
+) {
+  const id = randomUUID();
+  const senhaHash = gerarHashSenha(senha);
+
+  await pool.execute(
+    `INSERT INTO usuarios
+      (id, nome, usuario, senha_hash, ativo, perfil, unidade_id)
+     VALUES (?, ?, ?, ?, 1, 'admin_geral', 'CE')`,
+    [id, nome, usuario, senhaHash],
+  );
+
+  return { id, nome, usuario };
+}
+
+export function ehAdministradorGeral(
+  usuario: Pick<UsuarioAutenticado, "perfil"> | null,
+): boolean {
+  return usuario?.perfil === "admin_geral";
+}
+
+export function podeAcessarUnidade(
+  usuario: Pick<UsuarioAutenticado, "perfil" | "unidade_id"> | null,
+  unidadeId: string,
+): boolean {
+  if (!usuario) {
+    return false;
+  }
+
+  if (usuario.perfil === "admin_geral") {
+    return unidadeId === "CE" || unidadeId === "JP";
+  }
+
+  if (
+    usuario.perfil !== "admin_unidade" &&
+    usuario.perfil !== "usuario"
+  ) {
+    return false;
+  }
+
+  return usuario.unidade_id === unidadeId;
+}
+
+export async function obterUsuarioSessao(
+  token: string,
+): Promise<UsuarioAutenticado | null> {
+  if (!token || token.length !== 64 || !/^[a-f0-9]+$/i.test(token)) {
+    return null;
+  }
+
+  const tokenHash = criarHashToken(token);
+
+  const [rows] = await pool.execute<UsuarioSessaoRow[]>(
+    `SELECT
+       u.id,
+       u.nome,
+       u.usuario,
+       u.perfil,
+       u.unidade_id
+     FROM sessoes s
+     INNER JOIN usuarios u ON u.id = s.usuario_id
+     WHERE s.token_hash = ?
+       AND s.expira_em > NOW()
+       AND u.ativo = 1
+     LIMIT 1`,
+    [tokenHash],
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function obterUsuarioAutenticado() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("cm_session")?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  return obterUsuarioSessao(token);
+}
+
+export async function encerrarSessao(token: string) {
+  const tokenHash = criarHashToken(token);
+
+  await pool.execute(
+    "DELETE FROM sessoes WHERE token_hash = ?",
+    [tokenHash],
+  );
+}

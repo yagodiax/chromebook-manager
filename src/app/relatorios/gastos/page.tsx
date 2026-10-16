@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useUnidade } from "@/components/UnidadeProvider";
+
 
 type Periodo = "7-dias" | "30-dias" | "6-meses" | "1-ano" | "todo";
 type Registro = {
@@ -27,7 +29,10 @@ function limitePeriodo(periodo: Periodo): string | null {
 }
 function csv(valor: string | number) { return '"' + String(valor).replace(/"/g, '""') + '"'; }
 
+
 export default function RelatorioGastosPage() {
+  const { unidadeAtiva, unidadeCarregada } = useUnidade();
+
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [periodo, setPeriodo] = useState<Periodo>("1-ano");
   const [equipamentoId, setEquipamentoId] = useState("todos");
@@ -35,17 +40,55 @@ export default function RelatorioGastosPage() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
+    if (!unidadeCarregada) return;
+
     let ativo = true;
-    fetch("/api/historico-equipamentos", { cache: "no-store", credentials: "same-origin" })
-      .then(async (resposta) => {
+
+    async function carregarRegistros() {
+      setCarregando(true);
+      setErro("");
+      setEquipamentoId("todos");
+
+      try {
+        const resposta = await fetch(
+          `/api/historico-equipamentos?unidade=${encodeURIComponent(unidadeAtiva)}`,
+          {
+            cache: "no-store",
+            credentials: "same-origin",
+          },
+        );
+
         const dados = await resposta.json().catch(() => []);
-        if (!resposta.ok) throw new Error(dados.erro || "Não foi possível carregar o relatório.");
-        if (ativo) setRegistros(Array.isArray(dados) ? dados : []);
-      })
-      .catch((e: unknown) => { if (ativo) setErro(e instanceof Error ? e.message : "Erro ao carregar relatório."); })
-      .finally(() => { if (ativo) setCarregando(false); });
-    return () => { ativo = false; };
-  }, []);
+
+        if (!resposta.ok) {
+          throw new Error(
+            dados.erro || "Não foi possível carregar o relatório.",
+          );
+        }
+
+        if (ativo) {
+          setRegistros(Array.isArray(dados) ? dados : []);
+        }
+      } catch (erro: unknown) {
+        if (ativo) {
+          setErro(
+            erro instanceof Error
+              ? erro.message
+              : "Erro ao carregar relatório.",
+          );
+          setRegistros([]);
+        }
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+
+    void carregarRegistros();
+
+    return () => {
+      ativo = false;
+    };
+  }, [unidadeAtiva, unidadeCarregada]);
 
   const equipamentos = useMemo(() => {
     const mapa = new Map<string, Registro["equipamento"]>();
@@ -67,16 +110,45 @@ export default function RelatorioGastosPage() {
   const envios = filtrados.filter((item) => item.tipo === "envio-para-reparo").length;
   const custoMedio = retornos.length ? total / retornos.length : 0;
 
+
   const meses = useMemo(() => {
     const agora = new Date();
+
     return Array.from({ length: 12 }, (_, indice) => {
-      const data = new Date(agora.getFullYear(), agora.getMonth() - (11 - indice), 1);
-      const chave = data.getFullYear() + "-" + String(data.getMonth() + 1).padStart(2, "0");
-      const nome = data.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
-      const valor = registros.filter((item) => (equipamentoId === "todos" || item.equipamentoId === equipamentoId) && item.tipo === "retorno-de-reparo" && (item.data || "").slice(0, 7) === chave).reduce((soma, item) => soma + (Number(item.custo) || 0), 0);
-      return { chave, nome: nome.charAt(0).toUpperCase() + nome.slice(1), valor };
+      const data = new Date(
+        agora.getFullYear(),
+        agora.getMonth() - (11 - indice),
+        1,
+      );
+
+      const chave =
+        data.getFullYear() +
+        "-" +
+        String(data.getMonth() + 1).padStart(2, "0");
+
+      const nome = data
+        .toLocaleDateString("pt-BR", { month: "short" })
+        .replace(".", "");
+
+      const valor = filtrados
+        .filter(
+          (item) =>
+            item.tipo === "retorno-de-reparo" &&
+            (item.data || "").slice(0, 7) === chave,
+        )
+        .reduce(
+          (soma, item) => soma + (Number(item.custo) || 0),
+          0,
+        );
+
+      return {
+        chave,
+        nome: nome.charAt(0).toUpperCase() + nome.slice(1),
+        valor,
+      };
     });
-  }, [registros, equipamentoId]);
+  }, [filtrados]);
+
   const maxMes = Math.max(...meses.map((m) => m.valor), 1);
 
   const ranking = useMemo(() => {
