@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import type { RowDataPacket } from "mysql2/promise";
 import { pool } from "@/lib/db";
 const DURACAO_SESSAO_DIAS = 7;
-interface UsuarioSessaoRow extends RowDataPacket { id: string; nome: string; usuario: string; perfil: string; }
+interface UsuarioSessaoRow extends RowDataPacket { id: string; nome: string; usuario: string; perfil: string; unidade_id: string | null; }
 export function gerarHashSenha(senha: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(senha, salt, 64).toString("hex");
@@ -29,14 +29,14 @@ export async function criarSessao(usuarioId: string) {
 export async function criarAdministrador(nome: string, usuario: string, senha: string) {
   const id = randomUUID();
   const senhaHash = gerarHashSenha(senha);
-  await pool.execute(`INSERT INTO usuarios (id, nome, usuario, senha_hash, ativo, perfil) VALUES (?, ?, ?, ?, 1, 'admin')`, [id, nome, usuario, senhaHash]);
+  await pool.execute(`INSERT INTO usuarios (id, nome, usuario, senha_hash, ativo, perfil, unidade_id) VALUES (?, ?, ?, ?, 1, 'admin_geral', 'CE')`, [id, nome, usuario, senhaHash]);
   return { id, nome, usuario };
 }
 export async function obterUsuarioSessao(token: string) {
   if (!token || token.length !== 64 || !/^[a-f0-9]+$/i.test(token)) return null;
   const tokenHash = criarHashToken(token);
   const [rows] = await pool.execute<UsuarioSessaoRow[]>(
-    `SELECT u.id, u.nome, u.usuario, u.perfil
+    `SELECT u.id, u.nome, u.usuario, u.perfil, u.unidade_id
      FROM sessoes s INNER JOIN usuarios u ON u.id = s.usuario_id
      WHERE s.token_hash = ? AND s.expira_em > NOW() AND u.ativo = 1 LIMIT 1`,
     [tokenHash],
