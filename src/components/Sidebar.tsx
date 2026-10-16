@@ -6,7 +6,13 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 type ItemLink = { href: string; label: string; icon: string; active: boolean };
 
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen,
+  onClose,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [nome, setNome] = useState("Usuário");
@@ -82,19 +88,23 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-60 flex-col border-r border-gray-300 bg-[#e2e2e2] text-gray-800 transition-colors dark:border-[#555555] dark:bg-[#292929] dark:text-gray-100">
+    <aside
+      id="navegacao-principal"
+      aria-label="Menu principal"
+      className={"fixed inset-y-0 left-0 z-50 flex h-dvh w-60 flex-col border-r border-gray-300 bg-[#e2e2e2] text-gray-800 transition-transform transition-colors duration-200 dark:border-[#555555] dark:bg-[#292929] dark:text-gray-100 md:translate-x-0 " + (mobileOpen ? "translate-x-0" : "-translate-x-full")}
+    >
       <div className="border-b border-gray-300 bg-[#e2e2e2] px-5 py-6 dark:border-[#555555] dark:bg-[#292929]">
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-lg font-bold text-amber-300 dark:border-gray-500 dark:bg-gray-900 dark:text-amber-300">CM</div>
         <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100">Chromebook Manager</h1>
         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">Central de equipamentos</p>
       </div>
-      <nav aria-label="Navegação principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+      <nav aria-label="Navegação principal" className="flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
         {grupos.map((grupo) => (
           <section key={grupo.titulo} aria-label={grupo.titulo}>
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[.14em] text-gray-500 dark:text-gray-400">{grupo.titulo}</p>
             <div className="space-y-1">
               {grupo.links.map((item) => (
-                <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}
+                <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined} onClick={onClose}
                   className={"group flex min-h-10 items-center gap-3 rounded-lg border px-3 py-2 text-[13px] font-semibold transition-colors duration-150 " + (item.active ? "border-gray-400 bg-gray-300 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" : "border-transparent text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white")}>
                   <span aria-hidden="true" className={"flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-base " + (item.active ? "bg-gray-400/30 text-gray-900 dark:bg-gray-600 dark:text-white" : "bg-gray-300 text-gray-700 group-hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-200")}>{item.icon}</span>
                   <span className="min-w-0 flex-1">{item.label}</span>
