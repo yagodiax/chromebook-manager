@@ -80,8 +80,8 @@ function converterData(valor: string | Date): string {
 }
 
 export async function GET(request: Request) {
-  const falha = await verificarAutenticacao();
-  if (falha) return falha;
+  const usuario = await obterUsuarioAutenticado();
+  if (!usuario) return erroJson("Não autenticado.", 401);
 
   try {
     const url = new URL(request.url);
@@ -90,6 +90,20 @@ export async function GET(request: Request) {
 
     const condicoes: string[] = [];
     const parametros: string[] = [];
+
+    // Isola o histórico pela unidade do usuário no próprio servidor.
+    // O administrador geral pode consultar apenas as duas unidades válidas.
+    if (usuario.perfil === "admin_geral") {
+      condicoes.push("e.unidade_id IN ('CE', 'JP')");
+    } else if (
+      (usuario.perfil === "admin_unidade" || usuario.perfil === "usuario") &&
+      (usuario.unidade_id === "CE" || usuario.unidade_id === "JP")
+    ) {
+      condicoes.push("e.unidade_id = ?");
+      parametros.push(usuario.unidade_id);
+    } else {
+      return erroJson("Seu usuário não tem uma unidade válida para consultar o histórico.", 403);
+    }
 
     if (equipamentoId) {
       condicoes.push("h.equipamento_id = ?");
