@@ -1,0 +1,131 @@
+/* Regras complementares para telas pequenas, tablets e áreas com tabelas largas. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: clip;
+}
+
+main,
+main > div,
+main section,
+main article {
+  min-width: 0;
+}
+
+main img,
+main svg,
+main canvas,
+main video {
+  max-width: 100%;
+}
+
+main input,
+main select,
+main textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+
+main .overflow-x-auto {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+main table {
+  max-width: 100%;
+}
+
+main th,
+main td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* O layout legado reserva 15rem para a sidebar no desktop. */
+  main.pl-60 {
+    min-height: auto;
+    padding-left: 0 !important;
+  }
+
+  main {
+    width: 100%;
+  }
+
+  main .grid,
+  main .flex {
+    min-width: 0;
+  }
+
+  main .flex > * {
+    min-width: 0;
+  }
+
+  main h1 {
+    overflow-wrap: anywhere;
+  }
+
+  main [class*="text-4xl"] {
+    font-size: 1.875rem;
+    line-height: 1.2;
+  }
+
+  main [class*="text-3xl"] {
+    font-size: 1.625rem;
+    line-height: 1.25;
+  }
+
+  main .overflow-x-auto {
+    width: 100%;
+  }
+
+  main table {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 480px) {
+  main [class*="p-8"],
+  main [class*="p-6"] {
+    padding: 1rem;
+  }
+
+  main [class*="px-8"],
+  main [class*="px-6"] {
+    padding-inline: 1rem;
+  }
+
+  main [class*="gap-6"],
+  main [class*="gap-5"] {
+    gap: 1rem;
+  }
+
+  main button,
+  main a {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
