@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
     // Isola o histórico pela unidade do usuário no próprio servidor.
     // O administrador geral pode consultar apenas as duas unidades válidas.
-    if (usuario.perfil === "admin_geral") {
+    if (usuario.perfil === "admin_geral" || usuario.perfil === "admin") {
       condicoes.push("e.unidade_id IN ('CE', 'JP')");
     } else if (
       (usuario.perfil === "admin_unidade" || usuario.perfil === "usuario") &&
