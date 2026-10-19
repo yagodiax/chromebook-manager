@@ -118,9 +118,6 @@ export async function POST(request: Request) {
     const auth = await administrador();
 
     if (auth.resposta) return auth.resposta;
-
-const geral = ehAdministradorGeral(usuarioAtual);
-
     const entrada: unknown = await request.json();
 
     if (

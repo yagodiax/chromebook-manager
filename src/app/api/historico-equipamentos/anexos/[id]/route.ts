@@ -17,15 +17,6 @@ type AnexoRow = RowDataPacket & {
   unidade_id: string;
 };
 
-function ehAdministradorGeral(usuario: UsuarioAutenticado): boolean {
-  // "admin" é mantido temporariamente para compatibilidade
-  // com a conta administrativa antiga durante a migração.
-  return (
-    usuario.perfil === "admin_geral" ||
-    usuario.perfil === "admin"
-  );
-}
-
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
