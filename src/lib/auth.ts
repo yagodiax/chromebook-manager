@@ -19,13 +19,14 @@ export type PerfilUsuario =
   | "admin";
 
 export type UnidadeId = "CE" | "JP";
+export type UnidadeAcesso = UnidadeId | "AMBOS";
 
 export interface UsuarioAutenticado {
   id: string;
   nome: string;
   usuario: string;
   perfil: PerfilUsuario | string;
-  unidade_id: UnidadeId | string | null;
+  unidade_id: UnidadeAcesso | string | null;
 }
 
 interface UsuarioSessaoRow extends RowDataPacket {
@@ -117,7 +118,7 @@ export function podeAcessarUnidade(
     return false;
   }
 
-  if (usuario.perfil === "admin_geral") {
+  if (usuario.perfil === "admin_geral" || usuario.perfil === "admin") {
     return unidadeId === "CE" || unidadeId === "JP";
   }
 
@@ -128,7 +129,7 @@ export function podeAcessarUnidade(
     return false;
   }
 
-  return usuario.unidade_id === unidadeId;
+  return usuario.unidade_id === "AMBOS" || usuario.unidade_id === unidadeId;
 }
 
 export async function obterUsuarioSessao(

@@ -27,6 +27,7 @@ export default function Sidebar({
     unidadeAtiva,
     setUnidadeAtiva,
     administradorGeral,
+    podeAlternarUnidade,
     unidadeCarregada,
   } = useUnidade();
 
@@ -70,11 +71,7 @@ export default function Sidebar({
     };
   }, []);
 
-  const podeGerenciarUsuarios = [
-    "admin",
-    "admin_geral",
-    "admin_unidade",
-  ].includes(perfil);
+  const podeGerenciarUsuarios = ["admin", "admin_geral"].includes(perfil);
 
   const grupos: { titulo: string; links: ItemLink[] }[] = [
     {
@@ -237,7 +234,7 @@ export default function Sidebar({
         </p>
       </div>
 
-      {administradorGeral && (
+      {podeAlternarUnidade && (
         <div className="border-b border-gray-300 px-3 py-4 dark:border-[#555555]">
           <label
             htmlFor="seletor-unidade"

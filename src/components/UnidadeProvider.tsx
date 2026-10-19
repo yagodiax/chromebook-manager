@@ -14,6 +14,7 @@ type UnidadeContexto = {
   unidadeAtiva: UnidadeId;
   setUnidadeAtiva: (unidade: UnidadeId) => void;
   administradorGeral: boolean;
+  podeAlternarUnidade: boolean;
   unidadeCarregada: boolean;
 };
 
@@ -32,6 +33,7 @@ export function UnidadeProvider({
 }) {
   const [unidadeAtiva, definirUnidade] = useState<UnidadeId>("CE");
   const [administradorGeral, setAdministradorGeral] = useState(false);
+  const [podeAlternarUnidade, setPodeAlternarUnidade] = useState(false);
   const [unidadeCarregada, setUnidadeCarregada] = useState(false);
 
   useEffect(() => {
@@ -58,14 +60,10 @@ export function UnidadeProvider({
           usuario.perfil === "admin";
 
         setAdministradorGeral(geral);
-
-        const unidadeDoUsuario: UnidadeId = unidadeValida(
-          usuario.unidade_id,
-        )
-          ? usuario.unidade_id
-          : "CE";
-
-        if (geral) {
+        const podeAlternar = geral || usuario.unidade_id === "AMBOS";
+        setPodeAlternarUnidade(podeAlternar);
+        const unidadeDoUsuario: UnidadeId = unidadeValida(usuario.unidade_id) ? usuario.unidade_id : "CE";
+        if (podeAlternar) {
           let unidadeSalva: string | null = null;
 
           try {
@@ -98,8 +96,8 @@ export function UnidadeProvider({
     (unidade: UnidadeId) => {
       if (!unidadeValida(unidade)) return;
 
-      // Usuários comuns e administradores de unidade não podem trocar de unidade.
-      if (!administradorGeral) return;
+      // Só administrador geral ou contas com acesso aos dois colégios podem alternar.
+      if (!podeAlternarUnidade) return;
 
       definirUnidade(unidade);
 
@@ -109,7 +107,7 @@ export function UnidadeProvider({
         // A seleção continua ativa até a página ser fechada.
       }
     },
-    [administradorGeral],
+    [podeAlternarUnidade],
   );
 
   return (
@@ -118,6 +116,7 @@ export function UnidadeProvider({
         unidadeAtiva,
         setUnidadeAtiva,
         administradorGeral,
+        podeAlternarUnidade,
         unidadeCarregada,
       }}
     >
