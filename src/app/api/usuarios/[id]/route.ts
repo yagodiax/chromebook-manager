@@ -33,8 +33,8 @@ function ehAdministradorGeral(perfil: string) {
   return perfil === "admin_geral" || perfil === "admin";
 }
 
-function unidadeValida(unidade: string | null | undefined) {
-  return unidade === "CE" || unidade === "JP";
+function unidadeValida(unidade: unknown): unidade is "CE" | "JP" | "AMBOS" {
+  return unidade === "CE" || unidade === "JP" || unidade === "AMBOS";
 }
 
 export async function DELETE(
@@ -49,17 +49,8 @@ export async function DELETE(
     }
 
     const administradorGeral = ehAdministradorGeral(atual.perfil);
-    const administradorUnidade = atual.perfil === "admin_unidade";
-
-    if (!administradorGeral && !administradorUnidade) {
-      return erro("Você não tem permissão para excluir usuários.", 403);
-    }
-
-    if (
-      administradorUnidade &&
-      !unidadeValida(atual.unidade_id)
-    ) {
-      return erro("Sua conta não possui uma unidade válida.", 403);
+    if (!administradorGeral) {
+      return erro("Apenas o administrador geral pode excluir usuários.", 403);
     }
 
     const { id } = await context.params;
@@ -89,19 +80,9 @@ export async function DELETE(
       return erro("Usuário não encontrado.", 404);
     }
 
-    // Administradores de unidade só podem excluir usuários comuns
-    // pertencentes à própria unidade.
-    if (administradorUnidade) {
-      if (alvo.unidade_id !== atual.unidade_id) {
-        return erro("Usuário não encontrado.", 404);
-      }
-
-      if (alvo.perfil !== "usuario") {
-        return erro(
-          "Administradores de unidade só podem excluir usuários comuns da própria unidade.",
-          403,
-        );
-      }
+    // Contas administrativas são protegidas contra exclusão acidental.
+    if (ehAdministradorGeral(alvo.perfil)) {
+      return erro("A conta do administrador geral não pode ser excluída por esta tela.", 403);
     }
 
     // Impede que a exclusão deixe o sistema sem administrador geral ativo.

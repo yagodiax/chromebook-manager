@@ -11,7 +11,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type UnidadeId = "CE" | "JP";
+type UnidadeId = "CE" | "JP" | "AMBOS";
 
 function erro(mensagem: string, status: number) {
   return NextResponse.json(
@@ -33,7 +33,7 @@ function ehAdministradorGeral(usuario: UsuarioAutenticado): boolean {
 }
 
 function unidadeValida(valor: unknown): valor is UnidadeId {
-  return valor === "CE" || valor === "JP";
+  return valor === "CE" || valor === "JP" || valor === "AMBOS";
 }
 
 async function administrador() {
@@ -46,25 +46,13 @@ async function administrador() {
     };
   }
 
-  const autorizado =
-    ehAdministradorGeral(usuario) ||
-    usuario.perfil === "admin_unidade";
+  const autorizado = ehAdministradorGeral(usuario);
 
   if (!autorizado) {
     return {
       usuario: null,
       resposta: erro(
         "Apenas administradores podem gerenciar usuários.",
-        403,
-      ),
-    };
-  }
-
-  if (!ehAdministradorGeral(usuario) && !unidadeValida(usuario.unidade_id)) {
-    return {
-      usuario: null,
-      resposta: erro(
-        "Administrador sem unidade válida configurada.",
         403,
       ),
     };
@@ -94,41 +82,12 @@ export async function GET() {
 
     let rows: UsuarioRow[];
 
-    if (ehAdministradorGeral(usuarioAtual)) {
-      const [resultado] = await pool.query<UsuarioRow[]>(
-        `SELECT
-           id,
-           nome,
-           usuario,
-           perfil,
-           ativo,
-           unidade_id,
-           (senha_hash IS NULL) AS precisa_ativar,
-           created_at
-         FROM usuarios
-         ORDER BY created_at DESC, nome ASC`,
-      );
-
-      rows = resultado;
-    } else {
-      const [resultado] = await pool.execute<UsuarioRow[]>(
-        `SELECT
-           id,
-           nome,
-           usuario,
-           perfil,
-           ativo,
-           unidade_id,
-           (senha_hash IS NULL) AS precisa_ativar,
-           created_at
-         FROM usuarios
-         WHERE unidade_id = ?
-         ORDER BY created_at DESC, nome ASC`,
-        [usuarioAtual.unidade_id],
-      );
-
-      rows = resultado;
-    }
+    const [resultado] = await pool.query<UsuarioRow[]>(
+      `SELECT id, nome, usuario, perfil, ativo, unidade_id,
+              (senha_hash IS NULL) AS precisa_ativar, created_at
+       FROM usuarios ORDER BY created_at DESC, nome ASC`,
+    );
+    rows = resultado;
 
     return NextResponse.json(
       rows.map((row) => ({
@@ -202,45 +161,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // O administrador geral pode escolher a unidade.
-    // O administrador local só pode criar usuários na própria unidade.
-    let unidadeId: UnidadeId;
-
-    if (geral) {
-      const unidadeRecebida = body.unidadeId ?? body.unidade_id;
-
-      if (!unidadeValida(unidadeRecebida)) {
-        return erro(
-          "Selecione uma unidade válida: CE ou JP.",
-          400,
-        );
-      }
-
-      unidadeId = unidadeRecebida;
-    } else {
-      if (!unidadeValida(usuarioAtual.unidade_id)) {
-        return erro(
-          "Administrador sem unidade válida configurada.",
-          403,
-        );
-      }
-
-      unidadeId = usuarioAtual.unidade_id;
-
-      // Evita aceitar silenciosamente uma tentativa de cadastrar
-      // usuário em outra unidade.
-      const unidadeRecebida = body.unidadeId ?? body.unidade_id;
-
-      if (
-        unidadeRecebida !== undefined &&
-        unidadeRecebida !== unidadeId
-      ) {
-        return erro(
-          "Você só pode criar usuários na sua própria unidade.",
-          403,
-        );
-      }
+    const unidadeRecebida = body.unidadeId ?? body.unidade_id;
+    if (!unidadeValida(unidadeRecebida)) {
+      return erro("Selecione uma unidade válida: CE, JP ou AMBOS.", 400);
     }
+    const unidadeId: UnidadeId = unidadeRecebida;
 
     const id = randomUUID();
     const codigo = randomBytes(8).toString("hex").toUpperCase();
