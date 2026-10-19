@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
+  podeAcessarUnidade,
   type UsuarioAutenticado,
 } from "@/lib/auth";
 
@@ -315,11 +316,7 @@ export async function GET(request: Request) {
     return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
   }
 
-  if (
-    !administradorGeral &&
-    unidadeSolicitada &&
-    unidadeSolicitada !== usuario.unidade_id
-  ) {
+  if (!administradorGeral && usuario.unidade_id !== "AMBOS" && unidadeSolicitada && unidadeSolicitada !== usuario.unidade_id) {
     return erroJson(
       "Você não tem permissão para acessar outra unidade.",
       403,
@@ -333,19 +330,21 @@ export async function GET(request: Request) {
     const condicoes: string[] = [];
     const parametros: (string | number)[] = [];
 
-    if (administradorGeral) {
-      if (unidadeValida(unidadeSolicitada)) {
-        condicoes.push("e.unidade_id = ?");
-        parametros.push(unidadeSolicitada);
+    if (unidadeValida(unidadeSolicitada)) {
+      if (!podeAcessarUnidade(usuario, unidadeSolicitada)) {
+        return erroJson("Você não tem permissão para acessar outra unidade.", 403);
       }
-} else {
-if (!unidadeValida(usuario.unidade_id)) {
-return erroJson("Usuário sem unidade válida configurada.", 403);
-}
-
-condicoes.push("e.unidade_id = ?");
-parametros.push(usuario.unidade_id);
-}
+      condicoes.push("e.unidade_id = ?");
+      parametros.push(unidadeSolicitada);
+    } else if (usuario.unidade_id === "AMBOS" || administradorGeral) {
+      // Sem unidade explícita, usuários com acesso duplo consultam ambas.
+    } else {
+      if (!unidadeValida(usuario.unidade_id)) {
+        return erroJson("Usuário sem unidade válida configurada.", 403);
+      }
+      condicoes.push("e.unidade_id = ?");
+      parametros.push(usuario.unidade_id);
+    }
 
     if (equipamentoId) {
       condicoes.push("h.equipamento_id = ?");
@@ -542,10 +541,7 @@ export async function POST(request: Request) {
       return erroJson("O equipamento selecionado não existe.", 404);
     }
 
-    if (
-      !ehAdministradorGeral(usuario) &&
-      equipamento.unidade_id !== usuario.unidade_id
-    ) {
+    if (!podeAcessarUnidade(usuario, equipamento.unidade_id)) {
       await conexao.rollback();
       transacaoIniciada = false;
 
@@ -733,10 +729,7 @@ export async function PUT(request: Request) {
       return erroJson("Registro não encontrado.", 404);
     }
 
-    if (
-      !ehAdministradorGeral(usuario) &&
-      existente.unidade_id !== usuario.unidade_id
-    ) {
+    if (!podeAcessarUnidade(usuario, existente.unidade_id)) {
       await conexao.rollback();
       transacaoIniciada = false;
 

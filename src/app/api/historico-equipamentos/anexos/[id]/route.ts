@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
+  podeAcessarUnidade,
   type UsuarioAutenticado,
 } from "@/lib/auth";
 
@@ -77,18 +78,8 @@ export async function GET(
 
     // O administrador geral pode acessar as duas unidades.
     // Os demais usuários só acessam anexos da própria unidade.
-    if (!ehAdministradorGeral(usuario)) {
-      const unidadeUsuario = usuario.unidade_id;
-
-      if (
-        (unidadeUsuario !== "CE" && unidadeUsuario !== "JP") ||
-        anexo.unidade_id !== unidadeUsuario
-      ) {
-        return NextResponse.json(
-          { erro: "Anexo não encontrado." },
-          { status: 404 },
-        );
-      }
+    if (!podeAcessarUnidade(usuario, anexo.unidade_id)) {
+      return NextResponse.json({ erro: "Anexo não encontrado." }, { status: 404 });
     }
 
     const separador = anexo.conteudo_base64.indexOf(",");

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
+  podeAcessarUnidade,
   type UsuarioAutenticado,
 } from "@/lib/auth";
 
@@ -161,13 +162,14 @@ export async function GET(request: Request) {
 
   const usuario = autenticacao.usuario;
   const administradorGeral = ehAdministradorGeral(usuario);
+  const podeAlternarUnidade = administradorGeral || usuario.unidade_id === "AMBOS";
 
   const parametros = new URL(request.url).searchParams;
   const unidadeSolicitada = parametros.get("unidade");
 
   let unidade: UnidadeId;
 
-  if (administradorGeral) {
+  if (podeAlternarUnidade) {
     if (unidadeSolicitada && !unidadeValida(unidadeSolicitada)) {
       return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
     }
@@ -238,6 +240,7 @@ export async function POST(request: Request) {
 
   const usuario = autenticacao.usuario;
   const administradorGeral = ehAdministradorGeral(usuario);
+  const podeAlternarUnidade = administradorGeral || usuario.unidade_id === "AMBOS";
 
   try {
     const entrada: unknown = await request.json();
@@ -264,7 +267,7 @@ export async function POST(request: Request) {
 
     let unidade: UnidadeId;
 
-    if (administradorGeral) {
+    if (podeAlternarUnidade) {
       if (unidadeEnviada && !unidadeValida(unidadeEnviada)) {
         return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
       }

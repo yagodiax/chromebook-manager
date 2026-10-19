@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
+  podeAcessarUnidade,
   type UsuarioAutenticado,
 } from "@/lib/auth";
 
@@ -112,10 +113,7 @@ async function obterEquipamentoPermitido(
     return null;
   }
 
-  if (
-    !ehAdministradorGeral(usuario) &&
-    equipamento.unidade_id !== usuario.unidade_id
-  ) {
+  if (!podeAcessarUnidade(usuario, equipamento.unidade_id)) {
     // Retornamos null para não revelar se o ID existe em outra unidade.
     return null;
   }
