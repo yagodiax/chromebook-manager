@@ -293,7 +293,132 @@ export default function EquipamentosLista({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="space-y-3 p-3 md:hidden">
+              {lista.map((item) => (
+                <article
+                  key={item.id}
+                  className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-[#55555c] dark:bg-[#252b30]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        {NOMES[item.tipo]}
+                      </p>
+                      <h2 className="mt-1 break-words font-bold text-gray-900 dark:text-white">
+                        {item.tipo === "chromebook"
+                          ? `Chromebook nº ${String(
+                              item.detalhes?.numeroChromebook ??
+                                item.patrimonio.replace("CHROME-", ""),
+                            )}`
+                          : item.patrimonio || item.id}
+                      </h2>
+                      <p className="mt-1 break-words text-sm text-gray-600 dark:text-gray-300">
+                        {item.tipo === "chromebook"
+                          ? (item.modelo && item.modelo !== item.localizacao
+                              ? item.modelo
+                              : String(item.detalhes?.codigoModelo ?? "")) ||
+                            "Modelo não informado"
+                          : [item.fabricante, item.modelo].filter(Boolean).join(" ") ||
+                            "Modelo não informado"}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        item.status === "em-reparo"
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+                          : item.status === "em-uso"
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
+                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                      }`}
+                    >
+                      {STATUS[item.status] || item.status}
+                    </span>
+                  </div>
+
+                  <dl className="mt-4 grid grid-cols-1 gap-3 border-t border-gray-200 pt-3 text-sm dark:border-gray-600">
+                    {item.tipo === "chromebook" && (
+                      <div className="min-w-0">
+                        <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          MAC
+                        </dt>
+                        <dd className="mt-1 break-all font-mono text-xs text-gray-800 dark:text-gray-200">
+                          {String(item.detalhes?.mac ?? "—")}
+                        </dd>
+                      </div>
+                    )}
+                    {item.tipo === "chromebook" &&
+                      item.detalhes?.saudeBateria != null &&
+                      item.detalhes?.saudeBateria !== "" && (
+                        <div>
+                          <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                            Saúde da bateria
+                          </dt>
+                          <dd className="mt-1 text-gray-800 dark:text-gray-200">
+                            {String(item.detalhes.saudeBateria)}%
+                          </dd>
+                        </div>
+                      )}
+                    {item.tipo !== "chromebook" && (
+                      <div className="min-w-0">
+                        <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Fabricante / modelo
+                        </dt>
+                        <dd className="mt-1 break-words text-gray-800 dark:text-gray-200">
+                          {[item.fabricante, item.modelo].filter(Boolean).join(" ") ||
+                            "—"}
+                        </dd>
+                      </div>
+                    )}
+                    {item.tipo === "projetor" && (
+                      <div>
+                        <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          Potência
+                        </dt>
+                        <dd className="mt-1 text-gray-800 dark:text-gray-200">
+                          {String(item.detalhes?.potencia ?? "—")}
+                          {item.detalhes?.potenciaFicticia === true
+                            ? " (fictícia)"
+                            : ""}
+                        </dd>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Localização
+                      </dt>
+                      <dd className="mt-1 break-words text-gray-800 dark:text-gray-200">
+                        {item.localizacao || "—"}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-gray-200 pt-3 dark:border-gray-600">
+                    <Link
+                      href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}`}
+                      className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Detalhes
+                    </Link>
+                    <Link
+                      href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`}
+                      className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Editar
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void excluirEquipamento(item)}
+                      disabled={carregando}
+                      className="col-span-2 inline-flex min-h-10 items-center justify-center rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+                    >
+                      Excluir equipamento
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-teal-100 bg-teal-50/80 text-[10px] uppercase tracking-[.13em] text-teal-900/70 dark:border-[#2b454c] dark:bg-[#20363e] dark:text-teal-100/70">
                   <tr>
