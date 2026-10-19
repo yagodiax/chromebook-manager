@@ -1,8 +1,12 @@
+
 import { randomUUID } from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { obterUsuarioAutenticado } from "@/lib/auth";
+import {
+  obterUsuarioAutenticado,
+  type UsuarioAutenticado,
+} from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,8 +27,11 @@ const STATUS = [
   "para-descarte",
 ] as const;
 
+const UNIDADES = ["CE", "JP"] as const;
+
 type TipoEquipamento = (typeof TIPOS)[number];
 type StatusEquipamento = (typeof STATUS)[number];
+type UnidadeId = (typeof UNIDADES)[number];
 
 type EquipamentoRow = RowDataPacket & {
   id: string;
@@ -37,9 +44,14 @@ type EquipamentoRow = RowDataPacket & {
   status: StatusEquipamento;
   observacoes: string | null;
   detalhes: Record<string, unknown> | string | null;
+  unidade_id: UnidadeId;
   created_at: string | Date;
   updated_at: string | Date;
 };
+
+type ResultadoAutenticacao =
+  | { usuario: UsuarioAutenticado; erro: null }
+  | { usuario: null; erro: NextResponse };
 
 function erroJson(mensagem: string, status: number) {
   return NextResponse.json(
@@ -51,19 +63,48 @@ function erroJson(mensagem: string, status: number) {
   );
 }
 
-async function verificarAutenticacao() {
+async function verificarAutenticacao(): Promise<ResultadoAutenticacao> {
   try {
     const usuario = await obterUsuarioAutenticado();
 
     if (!usuario) {
-      return erroJson("Não autenticado.", 401);
+      return {
+        usuario: null,
+        erro: erroJson("Não autenticado.", 401),
+      };
     }
 
-    return null;
+    return { usuario, erro: null };
   } catch (erro) {
     console.error("Erro ao verificar autenticação:", erro);
-    return erroJson("Não foi possível verificar a sessão.", 500);
+
+    return {
+      usuario: null,
+      erro: erroJson("Não foi possível verificar a sessão.", 500),
+    };
   }
+}
+
+function ehAdministradorGeral(usuario: UsuarioAutenticado): boolean {
+  // "admin" é mantido temporariamente para compatibilidade
+  // com a conta administrativa existente durante a migração.
+  return (
+    usuario.perfil === "admin_geral" ||
+    usuario.perfil === "admin"
+  );
+}
+
+function unidadeValida(valor: unknown): valor is UnidadeId {
+  return (
+    typeof valor === "string" &&
+    UNIDADES.includes(valor as UnidadeId)
+  );
+}
+
+function unidadeDoUsuario(usuario: UsuarioAutenticado): UnidadeId {
+  return unidadeValida(usuario.unidade_id)
+    ? usuario.unidade_id
+    : "CE";
 }
 
 function texto(valor: unknown): string {
@@ -105,39 +146,98 @@ function apresentarEquipamento(row: EquipamentoRow) {
     status: row.status,
     observacoes: row.observacoes ?? "",
     detalhes,
+    unidadeId: row.unidade_id,
     criadoEm: row.created_at,
     atualizadoEm: row.updated_at,
   };
 }
 
-export async function GET() {
-  const falhaAutenticacao = await verificarAutenticacao();
-  if (falhaAutenticacao) return falhaAutenticacao;
+export async function GET(request: Request) {
+  const autenticacao = await verificarAutenticacao();
+
+  if (autenticacao.erro) {
+    return autenticacao.erro;
+  }
+
+  const usuario = autenticacao.usuario;
+  const administradorGeral = ehAdministradorGeral(usuario);
+
+  const parametros = new URL(request.url).searchParams;
+  const unidadeSolicitada = parametros.get("unidade");
+
+  let unidade: UnidadeId;
+
+  if (administradorGeral) {
+    if (unidadeSolicitada && !unidadeValida(unidadeSolicitada)) {
+      return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
+    }
+
+    unidade = unidadeValida(unidadeSolicitada)
+      ? unidadeSolicitada
+      : unidadeDoUsuario(usuario);
+  } else {
+    unidade = unidadeDoUsuario(usuario);
+
+    if (
+      unidadeSolicitada &&
+      unidadeSolicitada !== unidade
+    ) {
+      return erroJson(
+        "Você não tem permissão para acessar outra unidade.",
+        403,
+      );
+    }
+  }
 
   try {
-    const [rows] = await pool.query<EquipamentoRow[]>(`
-      SELECT
-        id, patrimonio, tipo, fabricante, modelo, numero_serie,
-        localizacao, status, observacoes, detalhes, created_at, updated_at
-      FROM equipamentos
-      ORDER BY tipo, patrimonio, created_at
-    `);
+    const [rows] = await pool.execute<EquipamentoRow[]>(
+      `
+        SELECT
+          id,
+          patrimonio,
+          tipo,
+          fabricante,
+          modelo,
+          numero_serie,
+          localizacao,
+          status,
+          observacoes,
+          detalhes,
+          unidade_id,
+          created_at,
+          updated_at
+        FROM equipamentos
+        WHERE unidade_id = ?
+        ORDER BY tipo, patrimonio, created_at
+      `,
+      [unidade],
+    );
 
-    return NextResponse.json(rows.map(apresentarEquipamento), {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(
+      rows.map(apresentarEquipamento),
+      {
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch (erro) {
     console.error("Erro ao listar equipamentos:", erro);
+
     return erroJson(
-      "Não foi possível listar os equipamentos. Confirme se a tabela equipamentos foi criada no banco.",
+      "Não foi possível listar os equipamentos. Confira a conexão e a estrutura do banco.",
       500,
     );
   }
 }
 
 export async function POST(request: Request) {
-  const falhaAutenticacao = await verificarAutenticacao();
-  if (falhaAutenticacao) return falhaAutenticacao;
+  const autenticacao = await verificarAutenticacao();
+
+  if (autenticacao.erro) {
+    return autenticacao.erro;
+  }
+
+  const usuario = autenticacao.usuario;
+  const administradorGeral = ehAdministradorGeral(usuario);
 
   try {
     const entrada: unknown = await request.json();
@@ -147,6 +247,7 @@ export async function POST(request: Request) {
     }
 
     const body = entrada as Record<string, unknown>;
+
     const patrimonio = texto(body.patrimonio) || null;
     const tipo = texto(body.tipo);
     const fabricante = texto(body.fabricante) || null;
@@ -156,6 +257,31 @@ export async function POST(request: Request) {
     const status = texto(body.status || "disponivel");
     const observacoes = texto(body.observacoes) || null;
     const detalhes = normalizarDetalhes(body.detalhes);
+
+    const unidadeEnviada = texto(
+      body.unidadeId ?? body.unidade_id,
+    );
+
+    let unidade: UnidadeId;
+
+    if (administradorGeral) {
+      if (unidadeEnviada && !unidadeValida(unidadeEnviada)) {
+        return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
+      }
+
+      unidade = unidadeValida(unidadeEnviada)
+        ? unidadeEnviada
+        : unidadeDoUsuario(usuario);
+    } else {
+      unidade = unidadeDoUsuario(usuario);
+
+      if (unidadeEnviada && unidadeEnviada !== unidade) {
+        return erroJson(
+          "Você não tem permissão para cadastrar equipamentos em outra unidade.",
+          403,
+        );
+      }
+    }
 
     if (!TIPOS.includes(tipo as TipoEquipamento)) {
       return erroJson("Selecione um tipo de equipamento válido.", 400);
@@ -175,12 +301,18 @@ export async function POST(request: Request) {
 
     for (const [nome, valor, limite] of limites) {
       if (valor && valor.length > limite) {
-        return erroJson(`O campo ${nome} ultrapassa ${limite} caracteres.`, 400);
+        return erroJson(
+          `O campo ${nome} ultrapassa ${limite} caracteres.`,
+          400,
+        );
       }
     }
 
     if (observacoes && observacoes.length > 60000) {
-      return erroJson("As observações ultrapassam o tamanho permitido.", 400);
+      return erroJson(
+        "As observações ultrapassam o tamanho permitido.",
+        400,
+      );
     }
 
     const id = `EQ-${randomUUID()}`;
@@ -188,10 +320,19 @@ export async function POST(request: Request) {
     await pool.execute<ResultSetHeader>(
       `
         INSERT INTO equipamentos (
-          id, patrimonio, tipo, fabricante, modelo, numero_serie,
-          localizacao, status, observacoes, detalhes
+          id,
+          patrimonio,
+          tipo,
+          fabricante,
+          modelo,
+          numero_serie,
+          localizacao,
+          status,
+          observacoes,
+          detalhes,
+          unidade_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         id,
@@ -204,6 +345,7 @@ export async function POST(request: Request) {
         status,
         observacoes,
         JSON.stringify(detalhes),
+        unidade,
       ],
     );
 
@@ -219,6 +361,7 @@ export async function POST(request: Request) {
         status,
         observacoes: observacoes ?? "",
         detalhes,
+        unidadeId: unidade,
       },
       {
         status: 201,
@@ -229,12 +372,16 @@ export async function POST(request: Request) {
     const erroBanco = erro as { code?: string };
 
     if (erroBanco.code === "ER_DUP_ENTRY") {
-      return erroJson("Já existe um equipamento com esse patrimônio.", 409);
+      return erroJson(
+        "Já existe um equipamento com esse patrimônio nesta unidade.",
+        409,
+      );
     }
 
     console.error("Erro ao cadastrar equipamento:", erro);
+
     return erroJson(
-      "Não foi possível cadastrar o equipamento. Confirme se a tabela equipamentos foi criada no banco.",
+      "Não foi possível cadastrar o equipamento. Confira a conexão e a estrutura do banco.",
       500,
     );
   }

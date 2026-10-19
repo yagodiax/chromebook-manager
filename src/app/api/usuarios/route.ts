@@ -1,71 +1,300 @@
+
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { obterUsuarioAutenticado } from "@/lib/auth";
+import {
+  obterUsuarioAutenticado,
+  type UsuarioAutenticado,
+} from "@/lib/auth";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type UnidadeId = "CE" | "JP";
+
 function erro(mensagem: string, status: number) {
-  return NextResponse.json({ erro: mensagem }, { status, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(
+    { erro: mensagem },
+    {
+      status,
+      headers: { "Cache-Control": "no-store" },
+    },
+  );
 }
+
+function ehAdministradorGeral(usuario: UsuarioAutenticado): boolean {
+  // "admin" permanece temporariamente por compatibilidade
+  // com a conta administrativa antiga durante a migração.
+  return (
+    usuario.perfil === "admin_geral" ||
+    usuario.perfil === "admin"
+  );
+}
+
+function unidadeValida(valor: unknown): valor is UnidadeId {
+  return valor === "CE" || valor === "JP";
+}
+
 async function administrador() {
   const usuario = await obterUsuarioAutenticado();
-  if (!usuario) return { usuario: null, resposta: erro("Não autenticado.", 401) };
-  if (usuario.perfil !== "admin") return { usuario: null, resposta: erro("Apenas administradores podem gerenciar usuários.", 403) };
+
+  if (!usuario) {
+    return {
+      usuario: null,
+      resposta: erro("Não autenticado.", 401),
+    };
+  }
+
+  const autorizado =
+    ehAdministradorGeral(usuario) ||
+    usuario.perfil === "admin_unidade";
+
+  if (!autorizado) {
+    return {
+      usuario: null,
+      resposta: erro(
+        "Apenas administradores podem gerenciar usuários.",
+        403,
+      ),
+    };
+  }
+
+  if (!ehAdministradorGeral(usuario) && !unidadeValida(usuario.unidade_id)) {
+    return {
+      usuario: null,
+      resposta: erro(
+        "Administrador sem unidade válida configurada.",
+        403,
+      ),
+    };
+  }
+
   return { usuario, resposta: null };
 }
+
 interface UsuarioRow extends RowDataPacket {
-  id: string; nome: string; usuario: string; perfil: string; ativo: number;
-  precisa_ativar: number; created_at: string | Date;
+  id: string;
+  nome: string;
+  usuario: string;
+  perfil: string;
+  ativo: number;
+  unidade_id: string | null;
+  precisa_ativar: number;
+  created_at: string | Date;
 }
+
 export async function GET() {
   try {
     const auth = await administrador();
+
     if (auth.resposta) return auth.resposta;
-    const [rows] = await pool.query<UsuarioRow[]>(`SELECT id, nome, usuario, perfil, ativo,
-      (senha_hash IS NULL) AS precisa_ativar, created_at
-      FROM usuarios ORDER BY created_at DESC, nome ASC`);
-    return NextResponse.json(rows.map((row) => ({
-      id: row.id, nome: row.nome, usuario: row.usuario, perfil: row.perfil,
-      ativo: Number(row.ativo) === 1, precisaAtivar: Number(row.precisa_ativar) === 1,
-      criadoEm: row.created_at, proprioUsuario: row.id === auth.usuario?.id,
-    })), { headers: { "Cache-Control": "no-store" } });
+
+    const usuarioAtual = auth.usuario!;
+
+    let rows: UsuarioRow[];
+
+    if (ehAdministradorGeral(usuarioAtual)) {
+      const [resultado] = await pool.query<UsuarioRow[]>(
+        `SELECT
+           id,
+           nome,
+           usuario,
+           perfil,
+           ativo,
+           unidade_id,
+           (senha_hash IS NULL) AS precisa_ativar,
+           created_at
+         FROM usuarios
+         ORDER BY created_at DESC, nome ASC`,
+      );
+
+      rows = resultado;
+    } else {
+      const [resultado] = await pool.execute<UsuarioRow[]>(
+        `SELECT
+           id,
+           nome,
+           usuario,
+           perfil,
+           ativo,
+           unidade_id,
+           (senha_hash IS NULL) AS precisa_ativar,
+           created_at
+         FROM usuarios
+         WHERE unidade_id = ?
+         ORDER BY created_at DESC, nome ASC`,
+        [usuarioAtual.unidade_id],
+      );
+
+      rows = resultado;
+    }
+
+    return NextResponse.json(
+      rows.map((row) => ({
+        id: row.id,
+        nome: row.nome,
+        usuario: row.usuario,
+        perfil: row.perfil,
+        unidadeId: row.unidade_id,
+        ativo: Number(row.ativo) === 1,
+        precisaAtivar: Number(row.precisa_ativar) === 1,
+        criadoEm: row.created_at,
+        proprioUsuario: row.id === usuarioAtual.id,
+      })),
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
     console.error("Erro ao listar usuários:", error);
-    return erro("Não foi possível listar os usuários. Confirme se a migração 007 foi executada.", 500);
+
+    return erro(
+      "Não foi possível listar os usuários. Confirme se a estrutura do banco está atualizada.",
+      500,
+    );
   }
 }
+
 export async function POST(request: Request) {
   try {
     const auth = await administrador();
+
     if (auth.resposta) return auth.resposta;
+
+    const usuarioAtual = auth.usuario!;
+    const geral = ehAdministradorGeral(usuarioAtual);
+
     const entrada: unknown = await request.json();
-    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) return erro("Os dados enviados são inválidos.", 400);
-    const body = entrada as Record<string, unknown>;
-    const nome = typeof body.nome === "string" ? body.nome.trim() : "";
-    const usuario = typeof body.usuario === "string" ? body.usuario.trim().toLowerCase() : "";
-    if (!nome || !usuario) return erro("Informe o nome e o nome de usuário.", 400);
-    if (nome.length > 150) return erro("O nome deve ter no máximo 150 caracteres.", 400);
-    if (usuario.length < 3 || usuario.length > 100 || !/^[a-z0-9._-]+$/.test(usuario)) {
-      return erro("O usuário deve ter de 3 a 100 caracteres e usar letras sem acento, números, ponto, hífen ou underline.", 400);
+
+    if (
+      !entrada ||
+      typeof entrada !== "object" ||
+      Array.isArray(entrada)
+    ) {
+      return erro("Os dados enviados são inválidos.", 400);
     }
+
+    const body = entrada as Record<string, unknown>;
+
+    const nome =
+      typeof body.nome === "string" ? body.nome.trim() : "";
+
+    const usuario =
+      typeof body.usuario === "string"
+        ? body.usuario.trim().toLowerCase()
+        : "";
+
+    if (!nome || !usuario) {
+      return erro("Informe o nome e o nome de usuário.", 400);
+    }
+
+    if (nome.length > 150) {
+      return erro("O nome deve ter no máximo 150 caracteres.", 400);
+    }
+
+    if (
+      usuario.length < 3 ||
+      usuario.length > 100 ||
+      !/^[a-z0-9._-]+$/.test(usuario)
+    ) {
+      return erro(
+        "O usuário deve ter de 3 a 100 caracteres e usar letras sem acento, números, ponto, hífen ou underline.",
+        400,
+      );
+    }
+
+    // O administrador geral pode escolher a unidade.
+    // O administrador local só pode criar usuários na própria unidade.
+    let unidadeId: UnidadeId;
+
+    if (geral) {
+      const unidadeRecebida = body.unidadeId ?? body.unidade_id;
+
+      if (!unidadeValida(unidadeRecebida)) {
+        return erro(
+          "Selecione uma unidade válida: CE ou JP.",
+          400,
+        );
+      }
+
+      unidadeId = unidadeRecebida;
+    } else {
+      if (!unidadeValida(usuarioAtual.unidade_id)) {
+        return erro(
+          "Administrador sem unidade válida configurada.",
+          403,
+        );
+      }
+
+      unidadeId = usuarioAtual.unidade_id;
+
+      // Evita aceitar silenciosamente uma tentativa de cadastrar
+      // usuário em outra unidade.
+      const unidadeRecebida = body.unidadeId ?? body.unidade_id;
+
+      if (
+        unidadeRecebida !== undefined &&
+        unidadeRecebida !== unidadeId
+      ) {
+        return erro(
+          "Você só pode criar usuários na sua própria unidade.",
+          403,
+        );
+      }
+    }
+
     const id = randomUUID();
     const codigo = randomBytes(8).toString("hex").toUpperCase();
-    const codigoHash = createHash("sha256").update(codigo).digest("hex");
+    const codigoHash = createHash("sha256")
+      .update(codigo)
+      .digest("hex");
+
     await pool.execute<ResultSetHeader>(
-      `INSERT INTO usuarios (id, nome, usuario, senha_hash, codigo_ativacao_hash, perfil, ativo)
-       VALUES (?, ?, ?, NULL, ?, 'usuario', 1)`,
-      [id, nome, usuario, codigoHash],
+      `INSERT INTO usuarios (
+         id,
+         nome,
+         usuario,
+         senha_hash,
+         codigo_ativacao_hash,
+         perfil,
+         ativo,
+         unidade_id
+       )
+       VALUES (?, ?, ?, NULL, ?, 'usuario', 1, ?)`,
+      [id, nome, usuario, codigoHash, unidadeId],
     );
-    return NextResponse.json({
-      sucesso: true, usuario: { id, nome, usuario, perfil: "usuario", precisaAtivar: true },
-      codigoPrimeiroAcesso: codigo,
-      mensagem: "Conta criada. Copie o código de primeiro acesso agora; ele não será exibido novamente.",
-    }, { status: 201, headers: { "Cache-Control": "no-store" } });
+
+    return NextResponse.json(
+      {
+        sucesso: true,
+        usuario: {
+          id,
+          nome,
+          usuario,
+          perfil: "usuario",
+          unidadeId,
+          precisaAtivar: true,
+        },
+        codigoPrimeiroAcesso: codigo,
+        mensagem:
+          "Conta criada. Copie o código de primeiro acesso agora; ele não será exibido novamente.",
+      },
+      {
+        status: 201,
+        headers: { "Cache-Control": "no-store" },
+      },
+    );
   } catch (error) {
     const dbError = error as { code?: string };
-    if (dbError.code === "ER_DUP_ENTRY") return erro("Esse nome de usuário já está em uso.", 409);
+
+    if (dbError.code === "ER_DUP_ENTRY") {
+      return erro("Esse nome de usuário já está em uso.", 409);
+    }
+
     console.error("Erro ao criar usuário:", error);
-    return erro("Não foi possível criar a conta. Confirme se a migração 007 foi executada.", 500);
+
+    return erro(
+      "Não foi possível criar a conta. Confirme se a estrutura do banco está atualizada.",
+      500,
+    );
   }
 }
