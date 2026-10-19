@@ -138,7 +138,7 @@ export default function UsuariosPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ unidadeId: novaUnidade }),
+        body: JSON.stringify({ nome: item.nome, usuario: item.usuario, unidadeId: novaUnidade }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro || "Não foi possível alterar o acesso.");
