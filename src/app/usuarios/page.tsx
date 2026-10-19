@@ -7,12 +7,13 @@ type Usuario = {
   nome: string;
   usuario: string;
   perfil: string;
+  unidadeId: string | null;
   ativo: boolean;
   precisaAtivar: boolean;
   criadoEm: string;
   proprioUsuario: boolean;
 };
-type NovoUsuario = { id: string; nome: string; usuario: string; perfil: string; precisaAtivar: boolean };
+type NovoUsuario = { id: string; nome: string; usuario: string; perfil: string; unidadeId: string; precisaAtivar: boolean };
 
 const campo =
   "w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10 dark:border-[#45454a] dark:bg-[#303035] dark:text-gray-100";
@@ -27,6 +28,7 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [nome, setNome] = useState("");
   const [usuario, setUsuario] = useState("");
+  const [unidadeId, setUnidadeId] = useState("CE");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -69,7 +71,7 @@ export default function UsuariosPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ nome, usuario }),
+        body: JSON.stringify({ nome, usuario, unidadeId }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) throw new Error(dados.erro || "Não foi possível criar a conta.");
@@ -78,11 +80,32 @@ export default function UsuariosPage() {
       setMensagem("Conta criada. Copie o código de ativação antes de sair desta tela.");
       setNome("");
       setUsuario("");
+      setUnidadeId("CE");
       await carregar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha ao criar conta.");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function alterarUnidade(item: Usuario, novaUnidade: string) {
+    if (item.proprioUsuario || item.perfil === "admin" || item.perfil === "admin_geral") return;
+    setErro("");
+    setMensagem("");
+    try {
+      const resposta = await fetch("/api/usuarios/" + encodeURIComponent(item.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ unidadeId: novaUnidade }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível alterar o acesso.");
+      setMensagem("Acesso de @" + item.usuario + " atualizado.");
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha ao alterar acesso.");
     }
   }
 
@@ -164,6 +187,14 @@ export default function UsuariosPage() {
                 <input className={campo} value={usuario} onChange={(e) => setUsuario(e.target.value.toLowerCase().replace(/\s/g, ""))} placeholder="Ex.: maria.silva" minLength={3} maxLength={100} pattern="[a-zA-Z0-9._-]+" autoComplete="off" required />
                 <span className="mt-1.5 block text-xs text-gray-500 dark:text-gray-400">Use letras sem acento, números, ponto, hífen ou underline.</span>
               </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">Acesso aos colégios</span>
+                <select className={campo} value={unidadeId} onChange={(e) => setUnidadeId(e.target.value)}>
+                  <option value="CE">CE — Campos Elíseos</option>
+                  <option value="JP">JP — Jardim Primavera</option>
+                  <option value="AMBOS">CE e JP — ambos os colégios</option>
+                </select>
+              </label>
               <button type="submit" disabled={salvando} className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60">{salvando ? "Criando conta..." : "Criar conta"}</button>
             </form>
           </section>
@@ -196,9 +227,20 @@ export default function UsuariosPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                      <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-[#414146] dark:text-gray-200">{item.perfil === "admin" ? "Administrador" : "Usuário"}</span>
+                      <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-[#414146] dark:text-gray-200">{item.perfil === "admin" || item.perfil === "admin_geral" ? "Administrador geral" : "Usuário"}</span>
+                      {item.perfil !== "admin" && item.perfil !== "admin_geral" && (
+                        item.proprioUsuario ? (
+                          <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-[#414146] dark:text-gray-200">{item.unidadeId === "AMBOS" ? "CE + JP" : item.unidadeId || "Sem unidade"}</span>
+                        ) : (
+                          <select aria-label={"Acesso aos colégios de " + item.nome} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-800 dark:border-[#55555a] dark:bg-[#303035] dark:text-gray-100" value={item.unidadeId || "CE"} onChange={(e) => void alterarUnidade(item, e.target.value)}>
+                            <option value="CE">CE</option>
+                            <option value="JP">JP</option>
+                            <option value="AMBOS">CE + JP</option>
+                          </select>
+                        )
+                      )}
                       <span className={"rounded-md px-2.5 py-1 text-xs font-medium " + (item.precisaAtivar ? "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200")}>{item.precisaAtivar ? "Aguardando ativação" : "Senha configurada"}</span>
-                      {!item.proprioUsuario && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-[#66666b] dark:hover:bg-[#414146] dark:hover:text-gray-100">Excluir</button>}
+                      {!item.proprioUsuario && item.perfil !== "admin" && item.perfil !== "admin_geral" && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-[#66666b] dark:hover:bg-[#414146] dark:hover:text-gray-100">Excluir</button>}
                     </div>
                   </article>
                 ))}

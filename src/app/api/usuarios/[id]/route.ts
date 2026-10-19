@@ -37,6 +37,61 @@ function unidadeValida(unidade: unknown): unidade is "CE" | "JP" | "AMBOS" {
   return unidade === "CE" || unidade === "JP" || unidade === "AMBOS";
 }
 
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const atual = await obterUsuarioAutenticado();
+    if (!atual) return erro("Não autenticado.", 401);
+    if (!ehAdministradorGeral(atual.perfil)) {
+      return erro("Apenas o administrador geral pode alterar o acesso dos usuários.", 403);
+    }
+
+    const { id } = await context.params;
+    if (!id) return erro("Usuário inválido.", 400);
+    if (id === atual.id) {
+      return erro("O acesso da própria conta administrativa não pode ser alterado por esta tela.", 409);
+    }
+
+    const entrada: unknown = await request.json();
+    if (!entrada || typeof entrada !== "object" || Array.isArray(entrada)) {
+      return erro("Os dados enviados são inválidos.", 400);
+    }
+    const body = entrada as Record<string, unknown>;
+    const unidade = body.unidadeId ?? body.unidade_id;
+    if (!unidadeValida(unidade)) {
+      return erro("Selecione CE, JP ou AMBOS.", 400);
+    }
+
+    const [usuarios] = await pool.execute<UsuarioAlvoRow[]>(
+      "SELECT id, perfil, unidade_id, ativo FROM usuarios WHERE id = ? LIMIT 1",
+      [id],
+    );
+    const alvo = usuarios[0];
+    if (!alvo) return erro("Usuário não encontrado.", 404);
+    if (ehAdministradorGeral(alvo.perfil) || alvo.perfil !== "usuario") {
+      return erro("O acesso das contas administrativas não pode ser alterado por esta tela.", 403);
+    }
+
+    const [resultado] = await pool.execute<ResultSetHeader>(
+      "UPDATE usuarios SET unidade_id = ? WHERE id = ? AND perfil = 'usuario'",
+      [unidade, id],
+    );
+    if (resultado.affectedRows === 0 && alvo.unidade_id !== unidade) {
+      return erro("Não foi possível atualizar o acesso.", 409);
+    }
+
+    return NextResponse.json(
+      { sucesso: true, id, unidadeId: unidade },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    console.error("Erro ao atualizar acesso do usuário:", error);
+    return erro("Não foi possível atualizar o acesso do usuário.", 500);
+  }
+}
+
 export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string }> },
