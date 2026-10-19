@@ -29,6 +29,11 @@ export default function UsuariosPage() {
   const [nome, setNome] = useState("");
   const [usuario, setUsuario] = useState("");
   const [unidadeId, setUnidadeId] = useState("CE");
+  const [editando, setEditando] = useState<Usuario | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editUsuario, setEditUsuario] = useState("");
+  const [editUnidade, setEditUnidade] = useState("CE");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -86,6 +91,41 @@ export default function UsuariosPage() {
       setErro(e instanceof Error ? e.message : "Falha ao criar conta.");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  function iniciarEdicao(item: Usuario) {
+    if (item.proprioUsuario || item.perfil === "admin" || item.perfil === "admin_geral" || item.perfil !== "usuario") return;
+    setEditando(item);
+    setEditNome(item.nome);
+    setEditUsuario(item.usuario);
+    setEditUnidade(item.unidadeId || "CE");
+    setErro("");
+    setMensagem("");
+  }
+
+  async function salvarEdicao(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editando) return;
+    setErro("");
+    setMensagem("");
+    setSalvandoEdicao(true);
+    try {
+      const resposta = await fetch("/api/usuarios/" + encodeURIComponent(editando.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ nome: editNome, usuario: editUsuario, unidadeId: editUnidade }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível editar o usuário.");
+      setMensagem("Dados de @" + dados.usuario + " atualizados.");
+      setEditando(null);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha ao editar usuário.");
+    } finally {
+      setSalvandoEdicao(false);
     }
   }
 
@@ -170,6 +210,40 @@ export default function UsuariosPage() {
           </section>
         )}
 
+        {editando && (
+          <section className={cartao + " p-5"}>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-700 dark:text-gray-300">Editar conta</p>
+                <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">Editar @{editando.usuario}</h2>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">Você pode alterar o nome, o nome de usuário e os colégios permitidos.</p>
+              </div>
+              <button type="button" onClick={() => setEditando(null)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 dark:border-[#55555a] dark:text-gray-200">Cancelar</button>
+            </div>
+            <form onSubmit={salvarEdicao} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">Nome completo</span>
+                <input className={campo} value={editNome} onChange={(e) => setEditNome(e.target.value)} maxLength={150} required />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">Nome de usuário</span>
+                <input className={campo} value={editUsuario} onChange={(e) => setEditUsuario(e.target.value.toLowerCase().replace(/\s/g, ""))} minLength={3} maxLength={100} pattern="[a-zA-Z0-9._-]+" required />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">Acesso aos colégios</span>
+                <select className={campo} value={editUnidade} onChange={(e) => setEditUnidade(e.target.value)}>
+                  <option value="CE">CE — Campos Elíseos</option>
+                  <option value="JP">JP — Jardim Primavera</option>
+                  <option value="AMBOS">CE e JP — ambos os colégios</option>
+                </select>
+              </label>
+              <div className="flex items-end">
+                <button type="submit" disabled={salvandoEdicao} className="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-60 dark:bg-[#202024]">{salvandoEdicao ? "Salvando..." : "Salvar alterações"}</button>
+              </div>
+            </form>
+          </section>
+        )}
+
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.4fr)]">
           <section className={cartao + " p-5"}>
             <div className="mb-5">
@@ -240,7 +314,8 @@ export default function UsuariosPage() {
                         )
                       )}
                       <span className={"rounded-md px-2.5 py-1 text-xs font-medium " + (item.precisaAtivar ? "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300" : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200")}>{item.precisaAtivar ? "Aguardando ativação" : "Senha configurada"}</span>
-                      {!item.proprioUsuario && item.perfil !== "admin" && item.perfil !== "admin_geral" && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-[#66666b] dark:hover:bg-[#414146] dark:hover:text-gray-100">Excluir</button>}
+                      {!item.proprioUsuario && item.perfil === "usuario" && <button type="button" onClick={() => iniciarEdicao(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-[#55555a] dark:text-gray-200 dark:hover:bg-[#414146]">Editar</button>}
+                      {!item.proprioUsuario && item.perfil === "usuario" && <button type="button" onClick={() => void excluir(item)} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-[#55555a] dark:text-gray-200 dark:hover:border-[#66666b] dark:hover:bg-[#414146] dark:hover:text-gray-100">Excluir</button>}
                     </div>
                   </article>
                 ))}
