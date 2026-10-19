@@ -5,7 +5,6 @@ import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
   podeAcessarUnidade,
-  type UsuarioAutenticado,
 } from "@/lib/auth";
 
 export const runtime = "nodejs";
