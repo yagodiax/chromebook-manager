@@ -293,7 +293,8 @@ export default function EquipamentosLista({
               </p>
             </div>
           ) : (
-            <div className="space-y-3 p-3 md:hidden">
+            <>
+              <div className="space-y-3 p-3 md:hidden">
               {lista.map((item) => (
                 <article
                   key={item.id}
@@ -596,6 +597,7 @@ export default function EquipamentosLista({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 
