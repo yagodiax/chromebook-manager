@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import {
   obterUsuarioAutenticado,
-  podeAcessarUnidade,
   type UsuarioAutenticado,
 } from "@/lib/auth";
 
