@@ -157,7 +157,14 @@ export async function obterUsuarioSessao(
     [tokenHash],
   );
 
-  return rows[0] ?? null;
+  const row = rows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  // NULL representa acesso às duas unidades; a aplicação usa "AMBOS".
+  return { ...row, unidade_id: row.unidade_id ?? "AMBOS" };
 }
 
 export async function obterUsuarioAutenticado() {
