@@ -41,6 +41,17 @@ const PLURAIS: Record<TipoEquipamento, string> = {
   impressora: "Impressoras",
 };
 
+function numeroEquipamento(item: Equipamento): string {
+  const identificador = item.patrimonio || item.id;
+  const sufixo = identificador.slice(identificador.lastIndexOf("-") + 1);
+  const numero = Number(sufixo);
+  return sufixo && Number.isFinite(numero) ? String(numero) : identificador;
+}
+
+function mostrarNumeroNoNome(tipo: TipoEquipamento): boolean {
+  return tipo === "notebook" || tipo === "projetor" || tipo === "impressora";
+}
+
 const STATUS: Record<string, string> = {
   disponivel: "Disponível",
   "em-uso": "Em uso",
@@ -311,7 +322,9 @@ export default function EquipamentosLista({
                               item.detalhes?.numeroChromebook ??
                                 item.patrimonio.replace("CHROME-", ""),
                             )}`
-                          : item.patrimonio || item.id}
+                          : mostrarNumeroNoNome(item.tipo)
+                            ? `${NOMES[item.tipo]} - ${numeroEquipamento(item)}`
+                            : item.patrimonio || item.id}
                       </h2>
                       <p className="mt-1 break-words text-sm text-gray-600 dark:text-gray-300">
                         {item.tipo === "chromebook"
@@ -362,7 +375,7 @@ export default function EquipamentosLista({
                     {item.tipo !== "chromebook" && (
                       <div className="min-w-0">
                         <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                          Fabricante / modelo
+                          {mostrarNumeroNoNome(item.tipo) ? "Modelo" : "Fabricante / modelo"}
                         </dt>
                         <dd className="mt-1 break-words text-gray-800 dark:text-gray-200">
                           {[item.fabricante, item.modelo].filter(Boolean).join(" ") ||
@@ -433,7 +446,9 @@ export default function EquipamentosLista({
                     ) : (
                       <>
                         <th className={th}>Equipamento</th>
-                        <th className={th}>MAC</th>
+                        <th className={th}>
+                          {tipoFiltro && mostrarNumeroNoNome(tipoFiltro) ? "Modelo" : "MAC"}
+                        </th>
                         <th className={th}>Localização</th>
                         {tipoFiltro === "projetor" && (
                           <th className={th}>Potência</th>
@@ -509,19 +524,20 @@ export default function EquipamentosLista({
                                     item.detalhes?.numeroChromebook ??
                                       item.patrimonio.replace("CHROME-", ""),
                                   )}`
-                                : NOMES[item.tipo]}
+                                : mostrarNumeroNoNome(item.tipo)
+                                  ? `${NOMES[item.tipo]} - ${numeroEquipamento(item)}`
+                                  : NOMES[item.tipo]}
                             </p>
 
-                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                              {item.tipo === "chromebook"
-                                ? (item.modelo &&
-                                    item.modelo !== item.localizacao
-                                    ? item.modelo
-                                    : String(
-                                        item.detalhes?.codigoModelo ?? "",
-                                      )) || "Modelo não informado"
-                                : item.id}
-                            </p>
+                            {item.tipo === "chromebook" && (
+                              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                {(item.modelo &&
+                                  item.modelo !== item.localizacao
+                                  ? item.modelo
+                                  : String(item.detalhes?.codigoModelo ?? "")) ||
+                                  "Modelo não informado"}
+                              </p>
+                            )}
                           </td>
 
                           <td className={td}>
