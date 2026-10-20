@@ -95,7 +95,7 @@ export async function GET() {
         nome: row.nome,
         usuario: row.usuario,
         perfil: row.perfil,
-        unidadeId: row.unidade_id,
+        unidadeId: row.unidade_id ?? "AMBOS",
         ativo: Number(row.ativo) === 1,
         precisaAtivar: Number(row.precisa_ativar) === 1,
         criadoEm: row.created_at,
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
          unidade_id
        )
        VALUES (?, ?, ?, NULL, ?, 'usuario', 1, ?)`,
-      [id, nome, usuario, codigoHash, unidadeId],
+      [id, nome, usuario, codigoHash, unidadeId === "AMBOS" ? null : unidadeId],
     );
 
     return NextResponse.json(
