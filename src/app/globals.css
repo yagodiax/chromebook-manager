@@ -265,3 +265,62 @@ main a[class*="bg-amber-"]:hover,
 main a[class*="bg-yellow-"]:hover {
   background-color: var(--brand-accent-hover) !important;
 }
+
+
+/* Badges de status do inventário: exceção explícita às neutralizações de cores acima. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid !important;
+  font-weight: 700;
+}
+.status-badge--disponivel {
+  background-color: #dcfce7 !important;
+  border-color: #16a34a !important;
+  color: #166534 !important;
+}
+.status-badge--em-uso {
+  background-color: #dbeafe !important;
+  border-color: #2563eb !important;
+  color: #1e40af !important;
+}
+.status-badge--reserva {
+  background-color: #f3e8ff !important;
+  border-color: #9333ea !important;
+  color: #6b21a8 !important;
+}
+.status-badge--em-reparo {
+  background-color: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #92400e !important;
+}
+.status-badge--para-descarte {
+  background-color: #e5e7eb !important;
+  border-color: #6b7280 !important;
+  color: #374151 !important;
+}
+.dark .status-badge--disponivel {
+  background-color: #14532d !important;
+  border-color: #4ade80 !important;
+  color: #dcfce7 !important;
+}
+.dark .status-badge--em-uso {
+  background-color: #1e3a8a !important;
+  border-color: #60a5fa !important;
+  color: #dbeafe !important;
+}
+.dark .status-badge--reserva {
+  background-color: #581c87 !important;
+  border-color: #c084fc !important;
+  color: #f3e8ff !important;
+}
+.dark .status-badge--em-reparo {
+  background-color: #78350f !important;
+  border-color: #fbbf24 !important;
+  color: #fef3c7 !important;
+}
+.dark .status-badge--para-descarte {
+  background-color: #374151 !important;
+  border-color: #9ca3af !important;
+  color: #f3f4f6 !important;
+}
