@@ -56,43 +56,54 @@ const STATUS: Record<string, string> = {
   disponivel: "Disponível",
   "em-uso": "Em uso",
   reserva: "Reserva",
-  reservado: "Reservado",
   "em-reparo": "Em reparo",
-  "em-manutencao": "Em manutenção",
-  manutencao: "Em manutenção",
-  inativo: "Inativo",
   "para-descarte": "Para descarte",
-  "retirada-de-pecas": "Retirada de peças",
 };
 
-function classeStatus(status: string): string {
-  const normalizado = status
+function normalizarStatus(status: string): string {
+  return status
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
     .replace(/[\s_]+/g, "-");
+}
 
-  switch (normalizado) {
-    case "disponivel":
-      return "border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-200";
-    case "em-uso":
-      return "border border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-200";
-    case "reserva":
-    case "reservado":
-    case "reservada":
-      return "border border-violet-300 bg-violet-100 text-violet-900 dark:border-violet-700 dark:bg-violet-950/70 dark:text-violet-200";
-    case "em-reparo":
-    case "reparo":
-    case "em-manutencao":
-    case "manutencao":
-      return "border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-200";
-    case "para-descarte":
-    case "retirada-de-pecas":
-    case "inativo":
-    default:
-      return "border border-gray-300 bg-gray-200 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100";
+function statusCanonico(status: string): string {
+  const normalizado = normalizarStatus(status);
+
+  if (normalizado === "disponivel") return "disponivel";
+  if (["em-uso", "uso"].includes(normalizado)) return "em-uso";
+  if (["reserva", "reservado", "reservada"].includes(normalizado)) return "reserva";
+  if (["em-reparo", "reparo", "em-manutencao", "manutencao"].includes(normalizado)) {
+    return "em-reparo";
   }
+  if (["para-descarte", "retirada-de-pecas", "inativo"].includes(normalizado)) {
+    return "para-descarte";
+  }
+
+  return normalizado;
+}
+
+function classeStatus(status: string): string {
+  switch (statusCanonico(status)) {
+    case "disponivel":
+      return "status-badge status-badge--disponivel";
+    case "em-uso":
+      return "status-badge status-badge--em-uso";
+    case "reserva":
+      return "status-badge status-badge--reserva";
+    case "em-reparo":
+      return "status-badge status-badge--em-reparo";
+    case "para-descarte":
+    default:
+      return "status-badge status-badge--para-descarte";
+  }
+}
+
+function nomeStatus(status: string): string {
+  const canonico = statusCanonico(status);
+  return STATUS[canonico] || status;
 }
 
 const campo =
@@ -190,7 +201,7 @@ export default function EquipamentosLista({
       return (
         tipoOk &&
         (!termo || textoBusca.includes(termo)) &&
-        (statusFiltro === "todos" || item.status === statusFiltro)
+        (statusFiltro === "todos" || statusCanonico(item.status) === statusFiltro)
       );
     });
 
@@ -307,9 +318,9 @@ export default function EquipamentosLista({
             className={campo}
           >
             <option value="todos">Todos os status</option>
-            {Object.entries(STATUS).map(([valor, nome]) => (
+            {["disponivel", "em-uso", "reserva", "para-descarte"].map((valor) => (
               <option key={valor} value={valor}>
-                {nome}
+                {STATUS[valor]}
               </option>
             ))}
           </select>
@@ -374,7 +385,7 @@ export default function EquipamentosLista({
                     <span
                       className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${classeStatus(item.status)}`}
                     >
-                      {STATUS[item.status] || item.status}
+                      {nomeStatus(item.status)}
                     </span>
                   </div>
 
@@ -596,7 +607,7 @@ export default function EquipamentosLista({
                         <span
                           className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${classeStatus(item.status)}`}
                         >
-                          {STATUS[item.status] || item.status}
+                          {nomeStatus(item.status)}
                         </span>
                       </td>
 
