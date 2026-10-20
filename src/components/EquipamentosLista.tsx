@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useUnidade } from "@/components/UnidadeProvider";
 
@@ -115,6 +115,10 @@ export default function EquipamentosLista({
   tipoFiltro?: TipoEquipamento;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const retorno = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+  const urlEditar = (id: string) => `/cadastros/equipamentos/${encodeURIComponent(id)}/editar?returnTo=${encodeURIComponent(retorno)}`;
   const { unidadeAtiva, unidadeCarregada } = useUnidade();
 
   const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
@@ -446,18 +450,12 @@ export default function EquipamentosLista({
                     </div>
                   </dl>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-gray-200 pt-3 dark:border-gray-600">
+                  <div className="mt-4 grid grid-cols-1 gap-2 border-t border-gray-200 pt-3 dark:border-gray-600">
                     <Link
-                      href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}`}
+                      href={urlEditar(item.id)}
                       className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-700"
                     >
-                      Detalhes
-                    </Link>
-                    <Link
-                      href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`}
-                      className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-100 dark:hover:bg-gray-700"
-                    >
-                      Editar
+                      Abrir / editar equipamento
                     </Link>
                     <button
                       type="button"
@@ -509,16 +507,12 @@ export default function EquipamentosLista({
                       tabIndex={0}
                       aria-label={`Editar ${NOMES[item.tipo]} ${item.patrimonio || item.id}`}
                       onClick={() =>
-                        router.push(
-                          `/cadastros/equipamentos/${encodeURIComponent(item.id)}`,
-                        )
+                        router.push(urlEditar(item.id))
                       }
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          router.push(
-                            `/cadastros/equipamentos/${encodeURIComponent(item.id)}`,
-                          );
+                          router.push(urlEditar(item.id));
                         }
                       }}
                       className="cursor-pointer hover:bg-teal-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-gray-500 dark:hover:bg-[#20363e]"
@@ -614,19 +608,11 @@ export default function EquipamentosLista({
                       <td className={td}>
                         <div className="flex justify-end gap-1.5">
                           <Link
-                            href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}`}
+                            href={urlEditar(item.id)}
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-[#606066] dark:text-gray-100 dark:hover:bg-[#505057]"
                           >
-                            Detalhes
-                          </Link>
-
-                          <Link
-                            href={`/cadastros/equipamentos/${encodeURIComponent(item.id)}/editar`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-[#606066] dark:text-gray-100 dark:hover:bg-[#505057]"
-                          >
-                            Editar
+                            Abrir / editar
                           </Link>
 
                           <button
