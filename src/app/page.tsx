@@ -606,66 +606,7 @@ export default function Home() {
           )}
         </section>
 
-        <section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-                Condição dos ativos · {unidadeAtiva}
-              </p>
 
-              <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Status do inventário
-              </h2>
-            </div>
-
-            <span className="w-fit rounded-md border border-gray-300 bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-              {carregando ? "—" : equipamentos.length} equipamentos
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {Object.entries(STATUS).map(([status, nome]) => {
-              const quantidade = equipamentos.filter(
-                (item) => item.status === status,
-              ).length;
-
-              return (
-                <div
-                  key={status}
-                  className={`rounded-lg border px-4 py-3 ${
-                    status === "disponivel"
-                      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30"
-                      : status === "em-uso"
-                        ? "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/30"
-                        : status === "reserva" || status === "reservado"
-                          ? "border-violet-200 bg-violet-50 dark:border-violet-900 dark:bg-violet-950/30"
-                          : status === "em-reparo" || status === "em-manutencao"
-                            ? "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
-                            : "border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-[#464646]"
-                  }`}
-                >
-                  <p className={`text-xs font-medium ${
-                    status === "disponivel"
-                      ? "text-emerald-800 dark:text-emerald-200"
-                      : status === "em-uso"
-                        ? "text-sky-800 dark:text-sky-200"
-                        : status === "reserva" || status === "reservado"
-                          ? "text-violet-800 dark:text-violet-200"
-                          : status === "em-reparo" || status === "em-manutencao"
-                            ? "text-amber-800 dark:text-amber-200"
-                            : "text-gray-600 dark:text-gray-300"
-                  }`}>
-                    {nome}
-                  </p>
-
-                  <p className="mt-2 text-xl font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                    {carregando ? "—" : quantidade}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
       </div>
     </main>
   );
