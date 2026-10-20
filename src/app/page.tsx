@@ -43,7 +43,10 @@ const TIPOS: Record<string, string> = {
 const STATUS: Record<string, string> = {
   disponivel: "Disponível",
   "em-uso": "Em uso",
+  reserva: "Reserva",
+  reservado: "Reservado",
   "em-reparo": "Em reparo",
+  "em-manutencao": "Em manutenção",
   inativo: "Inativo",
   "para-descarte": "Para descarte",
 };
@@ -629,9 +632,29 @@ export default function Home() {
               return (
                 <div
                   key={status}
-                  className="rounded-lg border border-gray-300 bg-gray-100 px-4 py-3 dark:border-gray-600 dark:bg-[#464646]"
+                  className={`rounded-lg border px-4 py-3 ${
+                    status === "disponivel"
+                      ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30"
+                      : status === "em-uso"
+                        ? "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/30"
+                        : status === "reserva" || status === "reservado"
+                          ? "border-violet-200 bg-violet-50 dark:border-violet-900 dark:bg-violet-950/30"
+                          : status === "em-reparo" || status === "em-manutencao"
+                            ? "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
+                            : "border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-[#464646]"
+                  }`}
                 >
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                  <p className={`text-xs font-medium ${
+                    status === "disponivel"
+                      ? "text-emerald-800 dark:text-emerald-200"
+                      : status === "em-uso"
+                        ? "text-sky-800 dark:text-sky-200"
+                        : status === "reserva" || status === "reservado"
+                          ? "text-violet-800 dark:text-violet-200"
+                          : status === "em-reparo" || status === "em-manutencao"
+                            ? "text-amber-800 dark:text-amber-200"
+                            : "text-gray-600 dark:text-gray-300"
+                  }`}>
                     {nome}
                   </p>
 
