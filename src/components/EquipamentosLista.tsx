@@ -66,23 +66,33 @@ const STATUS: Record<string, string> = {
 };
 
 function classeStatus(status: string): string {
-  switch (status) {
+  const normalizado = status
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, "-");
+
+  switch (normalizado) {
     case "disponivel":
-      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200";
+      return "border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-200";
     case "em-uso":
-      return "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200";
+    case "em-uso":
+      return "border border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-200";
     case "reserva":
     case "reservado":
-      return "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200";
+    case "reservada":
+      return "border border-violet-300 bg-violet-100 text-violet-900 dark:border-violet-700 dark:bg-violet-950/70 dark:text-violet-200";
     case "em-reparo":
+    case "reparo":
     case "em-manutencao":
     case "manutencao":
-      return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200";
+      return "border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-200";
     case "para-descarte":
     case "retirada-de-pecas":
     case "inativo":
     default:
-      return "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
+      return "border border-gray-300 bg-gray-200 text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100";
   }
 }
 
