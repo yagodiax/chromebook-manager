@@ -55,10 +55,36 @@ function mostrarNumeroNoNome(tipo: TipoEquipamento): boolean {
 const STATUS: Record<string, string> = {
   disponivel: "Disponível",
   "em-uso": "Em uso",
+  reserva: "Reserva",
+  reservado: "Reservado",
   "em-reparo": "Em reparo",
+  "em-manutencao": "Em manutenção",
+  manutencao: "Em manutenção",
   inativo: "Inativo",
   "para-descarte": "Para descarte",
+  "retirada-de-pecas": "Retirada de peças",
 };
+
+function classeStatus(status: string): string {
+  switch (status) {
+    case "disponivel":
+      return "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200";
+    case "em-uso":
+      return "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200";
+    case "reserva":
+    case "reservado":
+      return "bg-violet-100 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200";
+    case "em-reparo":
+    case "em-manutencao":
+    case "manutencao":
+      return "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200";
+    case "para-descarte":
+    case "retirada-de-pecas":
+    case "inativo":
+    default:
+      return "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200";
+  }
+}
 
 const campo =
   "rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none dark:border-[#55555c] dark:bg-[#333338] dark:text-white";
@@ -337,13 +363,7 @@ export default function EquipamentosLista({
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        item.status === "em-reparo"
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
-                          : item.status === "em-uso"
-                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                      }`}
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${classeStatus(item.status)}`}
                     >
                       {STATUS[item.status] || item.status}
                     </span>
@@ -565,13 +585,7 @@ export default function EquipamentosLista({
 
                       <td className={td}>
                         <span
-                          className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            item.status === "em-reparo"
-                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
-                              : item.status === "em-uso"
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
-                                : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                          }`}
+                          className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${classeStatus(item.status)}`}
                         >
                           {STATUS[item.status] || item.status}
                         </span>
