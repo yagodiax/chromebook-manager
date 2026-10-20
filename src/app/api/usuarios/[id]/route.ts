@@ -85,7 +85,7 @@ export async function PATCH(
 
     const [resultado] = await pool.execute<ResultSetHeader>(
       "UPDATE usuarios SET nome = ?, usuario = ?, unidade_id = ? WHERE id = ? AND perfil = 'usuario'",
-      [nome, usuario, unidade, id],
+      [nome, usuario, unidade === "AMBOS" ? null : unidade, id],
     );
     if (resultado.affectedRows === 0) {
       const [confirmacao] = await pool.execute<UsuarioAlvoRow[]>(
