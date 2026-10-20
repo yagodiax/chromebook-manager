@@ -77,7 +77,6 @@ function classeStatus(status: string): string {
     case "disponivel":
       return "border border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-200";
     case "em-uso":
-    case "em-uso":
       return "border border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-950/70 dark:text-sky-200";
     case "reserva":
     case "reservado":
