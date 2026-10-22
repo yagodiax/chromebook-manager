@@ -1,139 +1,189 @@
 # 💻 Chromebook Manager
 
-Sistema web para gerenciamento de Chromebooks, equipamentos de TI e manutenções em ambiente escolar.
+Sistema web para gerenciamento de equipamentos de TI, manutenção e gastos em ambiente escolar.
 
-O **Chromebook Manager** tem como objetivo centralizar o controle dos equipamentos, facilitar o acompanhamento das manutenções e permitir uma melhor visualização dos gastos relacionados à infraestrutura de TI.
+O **Chromebook Manager** está em desenvolvimento e busca centralizar o cadastro do patrimônio, o acompanhamento dos reparos e a consulta dos custos de manutenção. O projeto também está sendo preparado para atender mais de uma unidade escolar, com acesso definido pelas permissões de cada usuário.
 
-> 🚧 **Status do projeto:** Em desenvolvimento.
+## ✨ Módulos e funcionalidades
 
-## ✨ Funcionalidades
+### 📦 Equipamentos
 
-### 📦 Gestão de equipamentos
+- Cadastro, consulta e edição de equipamentos.
+- Pesquisa por informações do equipamento, como identificação, modelo, número de série, MAC e localização, conforme os campos disponíveis.
+- Filtros por tipo e situação.
+- Acompanhamento de equipamentos disponíveis, em uso, em reserva, em reparo e destinados ao descarte, conforme os fluxos implementados.
 
-* Cadastro de Chromebooks.
-* Visualização dos equipamentos cadastrados.
-* Edição e exclusão de equipamentos.
-* Consulta dos detalhes de cada equipamento.
-* Pesquisa por informações como ID, número, MAC, número de série, modelo e sala.
-* Filtros por situação do equipamento.
-* Indicadores de equipamentos em uso, disponíveis, em reparo e para descarte.
+### 🔧 Manutenção e reparos
 
-### 🔧 Gestão de manutenções
-
-* Registro e acompanhamento de manutenções.
-* Edição e exclusão de registros de manutenção.
-* Organização do histórico de serviços realizados.
-* Acompanhamento dos custos associados às manutenções.
+- Registro e consulta do histórico de manutenção.
+- Acompanhamento de envios para reparo e retornos.
+- Registro e consulta de custos relacionados aos serviços.
+- Consulta dos registros associados a cada equipamento.
 
 ### 📊 Dashboard e relatórios
 
-* Painel inicial com indicadores gerais.
-* Resumo dos equipamentos e das manutenções.
-* Relatório de gastos com filtros.
-* Visualização dos gastos por período e equipamento.
-* Histórico de manutenções e análise de custos.
-* Exportação de dados do relatório em CSV.
+- Indicadores gerais dos equipamentos e das manutenções.
+- Relatório de gastos com filtros.
+- Consulta de custos por período e equipamento.
+- Exportação CSV nas áreas em que a opção está disponível.
 
 ### 🎨 Interface
 
-* Tema claro e escuro.
-* Interface responsiva.
-* Componentes visuais padronizados.
-* Navegação entre os módulos do sistema.
+- Tema claro e escuro.
+- Interface responsiva.
+- Navegação entre os módulos do sistema.
 
-## 🛠️ Tecnologias utilizadas
+> **Status:** projeto em desenvolvimento. A lista de módulos e recursos pode mudar conforme as funcionalidades forem implementadas e testadas.
 
-| Tecnologia                                    | Finalidade                              |
-| --------------------------------------------- | --------------------------------------- |
-| [Next.js](https://nextjs.org/)                | Framework da aplicação                  |
-| [React](https://react.dev/)                   | Construção da interface                 |
-| [TypeScript](https://www.typescriptlang.org/) | Tipagem estática                        |
-| [Tailwind CSS](https://tailwindcss.com/)      | Estilização                             |
-| LocalStorage                                  | Persistência local dos dados            |
-| Git e GitHub                                  | Versionamento e gerenciamento do código |
-| Vercel                                        | Hospedagem e implantação                |
+## 🛠️ Tecnologias
 
-## 🚀 Como executar o projeto
+| Tecnologia | Uso |
+| --- | --- |
+| [Next.js](https://nextjs.org/) | Framework da aplicação |
+| [React](https://react.dev/) | Interface |
+| [TypeScript](https://www.typescriptlang.org/) | Tipagem estática |
+| [Tailwind CSS](https://tailwindcss.com/) | Estilização |
+| [MySQL](https://www.mysql.com/) / [TiDB Cloud](https://tidbcloud.com/) | Banco de dados |
+| [mysql2](https://github.com/sidorares/node-mysql2) | Conexão com o banco |
+| [pnpm](https://pnpm.io/) | Gerenciamento de dependências |
+| [GitHub](https://github.com/yagodiax/chromebook-manager) | Versionamento do código |
+| [Vercel](https://vercel.com/) | Hospedagem e implantação |
+
+## 🚀 Como executar localmente no Windows
 
 ### Pré-requisitos
 
-* [Node.js](https://nodejs.org/) instalado.
-* [Git](https://git-scm.com/) instalado.
-* [pnpm](https://pnpm.io/) instalado.
+Instale os seguintes programas:
 
-### 1. Clonar o repositório
+- [Node.js](https://nodejs.org/) — versão compatível com o projeto (Node.js 24 é utilizado no desenvolvimento).
+- [Git](https://git-scm.com/).
+- [pnpm](https://pnpm.io/).
 
-```bash
-git clone https://github.com/yagodiax/chromebook-manager.git
+Abra o **PowerShell** e confira as instalações:
+
+```powershell
+node -v
+git --version
+pnpm -v
 ```
 
-### 2. Entrar na pasta do projeto
+Se o pnpm não estiver disponível, habilite-o pelo Corepack, se incluído na instalação do Node.js:
 
-```bash
+```powershell
+corepack enable
+corepack prepare pnpm@10.34.6 --activate
+```
+
+### 1. Baixar o projeto
+
+```powershell
+git clone https://github.com/yagodiax/chromebook-manager.git
 cd chromebook-manager
 ```
 
-### 3. Instalar as dependências
+Se a pasta já existir, entre nela em vez de clonar novamente:
 
-```bash
+```powershell
+cd caminho\para\chromebook-manager
+git pull
+```
+
+### 2. Instalar as dependências
+
+```powershell
 pnpm install
 ```
 
-### 4. Iniciar o servidor de desenvolvimento
+### 3. Configurar a conexão com o banco
 
-```bash
+A aplicação utiliza um banco MySQL compatível, configurado pelas variáveis de ambiente. Crie um arquivo chamado `.env.local` na raiz do projeto, no mesmo nível do `package.json`.
+
+Use este modelo e preencha com os dados do banco autorizado para o ambiente:
+
+```dotenv
+DB_HOST=SEU_HOST_DO_BANCO
+DB_PORT=4000
+DB_USER=SEU_USUARIO
+DB_PASSWORD=SUA_SENHA
+DB_NAME=chromebook_manager
+```
+
+**Importante:**
+- Substitua os valores de exemplo pelos dados corretos do banco.
+- Não compartilhe nem envie o arquivo `.env.local) para o GitHub. Ele contém credenciais.
+- Não coloque senhas diretamente no código-fonte.
+- O banco precisa estar acessível a partir da sua conexão e o usuário precisa ter as permissões necessárias.
+- Para executar localmente, solicite as credenciais ao responsável pelo projeto; elas não são incluídas neste README.
+
+### 4. Iniciar em modo de desenvolvimento
+
+```powershell
 pnpm dev
 ```
 
-### 5. Acessar a aplicação
-
-Abra o navegador e acesse:
+Abra o endereço mostrado no terminal, normalmente:
 
 ```text
 http://localhost:3000
 ```
 
-Se a porta 3000 estiver ocupada, o Next.js poderá utilizar outra porta, como a 3001. Confira o endereço exibido no terminal.
+Se a porta estiver ocupada, o Next.js pode escolher outra porta e informar o endereço no terminal.
 
-## 💾 Armazenamento de dados
+### Outros comandos
 
-Atualmente, a aplicação utiliza o `localStorage` do navegador para armazenar os dados.
+```powershell
+pnpm build
+pnpm start
+pnpm lint
+```
 
-Isso permite manter os registros no mesmo navegador após atualizar ou fechar a página. Entretanto, os dados não são automaticamente compartilhados entre diferentes computadores ou navegadores.
+- `pnpm build`: gera a versão de produção e ajuda a identificar erros de compilação.
+- `pnpm start`: inicia a versão de produção já compilada.
+- `pnpm lint`: executa o ESLint.
 
-### Melhorias planejadas
+## 🗄️ Dados e unidades escolares
 
-* Migração para banco de dados centralizado.
-* Implementação de autenticação e controle de acesso.
-* Gestão de estoque de peças e consumíveis.
-* Histórico de instalação, substituição e destino de componentes.
-* Aprimoramentos na gestão de equipamentos e manutenções.
+O projeto utiliza conexão com banco de dados MySQL/TiDB configurada por variáveis de ambiente. Os dados persistidos no banco podem ser compartilhados entre ambientes autorizados que utilizem a mesma base.
 
-## 📁 Estrutura do projeto
+O sistema está sendo preparado para separar os dados de **Campos Elíseos** e **Jardim Primavera**, permitindo que funcionários acessem a unidade correspondente e que administradores autorizados tenham uma visão consolidada. O isolamento e as permissões precisam ser validados em cada fluxo antes de considerar essa parte concluída.
+
+Faça alterações no banco com cuidado e mantenha um backup antes de mudanças estruturais ou operações em massa.
+
+## 🧭 Melhorias planejadas
+
+- Aperfeiçoar a navegação entre a Dashboard e as listas por tipo de equipamento.
+- Melhorar a legibilidade de botões e controles de interface.
+- Concluir a unificação dos dados e do histórico na tela do equipamento e validar o retorno à lista anterior.
+- Filtrar os equipamentos disponíveis para cadastro de retorno do reparo.
+- Revisar os relatórios de gastos e as permissões por unidade.
+- Evoluir os módulos de equipamentos gerais e estoque de peças e consumíveis.
+
+As tarefas acima representam melhorias planejadas e não devem ser interpretadas como recursos já concluídos.
+
+## 📁 Estrutura geral
 
 ```text
 chromebook-manager/
 ├── src/
-│   ├── app/          # Páginas e rotas da aplicação
-│   ├── lib/          # Funções e regras de negócio
+│   ├── app/          # Páginas, rotas e APIs
+│   ├── components/   # Componentes da interface
+│   ├── lib/          # Banco de dados e regras compartilhadas
 │   └── types/        # Tipos e interfaces TypeScript
 ├── public/           # Arquivos estáticos
 ├── package.json      # Dependências e scripts
-├── pnpm-lock.yaml    # Versões das dependências
+├── pnpm-lock.yaml    # Versões resolvidas das dependências
 └── README.md         # Documentação do projeto
 ```
 
-## 🌐 Projeto online
+## 🌐 Links do projeto
 
-* **Repositório:** [github.com/yagodiax/chromebook-manager](https://github.com/yagodiax/chromebook-manager)
-* **Aplicação:** [Acessar o Chromebook Manager](https://chromebook-manager-caqi3gdvh-yagodiax.vercel.app/)
+- **Repositório:** [github.com/yagodiax/chromebook-manager](https://github.com/yagodiax/chromebook-manager)
+- **Aplicação:** [Abrir o Chromebook Manager](https://chromebook-manager-khaki.vercel.app/)
 
 ## 🎯 Objetivo
 
-Desenvolver uma ferramenta para auxiliar a equipe de TI escolar no gerenciamento do patrimônio tecnológico, no acompanhamento das manutenções e no controle dos gastos, com foco em organização, praticidade e evolução contínua.
+Ajudar a equipe de TI escolar a organizar o patrimônio tecnológico, acompanhar manutenções e reparos e consultar os gastos, com atenção à segurança dos dados, às permissões e à separação entre unidades.
 
 ---
 
-Desenvolvido como projeto em evolução para gestão de equipamentos e manutenção de TI escolar.
-
-**Chromebook Manager** 💻
+**Chromebook Manager** 💻 — projeto em evolução.
