@@ -153,10 +153,12 @@ export default function HistoricoPage() {
       item.tipo === "reposicao-de-peca",
   ).length;
 
-  const totalReparos = registros.filter(
-    (item) =>
-      item.tipo === "envio-para-reparo" ||
-      item.tipo === "retorno-de-reparo",
+  const totalEnviosReparo = registros.filter(
+    (item) => item.tipo === "envio-para-reparo",
+  ).length;
+
+  const totalReparosConcluidos = registros.filter(
+    (item) => item.tipo === "retorno-de-reparo",
   ).length;
 
   const equipamentosAtendidos = new Set(
@@ -201,103 +203,133 @@ export default function HistoricoPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-7 xl:p-9 dark:bg-[#2b2b2b]">
       <div className="mx-auto max-w-[1500px]">
-        <header className="rounded-2xl border border-gray-300 bg-white p-6 shadow-sm sm:p-8 dark:border-gray-600 dark:bg-[#383838]">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[.16em] text-gray-500 dark:text-gray-400">
-                Central de serviços · Inventário ·{" "}
-                {unidadeCarregada ? unidadeAtiva : "Carregando unidade"}
-              </p>
+        <header className="relative overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-[#4c4c52] dark:bg-[#303035]">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gray-700 via-gray-500 to-gray-300 dark:from-gray-200 dark:via-gray-500 dark:to-gray-700" />
+          <div className="p-5 sm:p-7 xl:p-8">
+            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[.12em] text-gray-600 dark:border-[#505057] dark:bg-[#38383f] dark:text-gray-300">
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Central de serviços
+                  <span className="text-gray-400">/</span>
+                  {unidadeCarregada ? unidadeAtiva : "Carregando unidade"}
+                </div>
 
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">
-                Histórico de serviços
-              </h1>
+                <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+                  Histórico de serviços
+                </h1>
 
-              <p className="mt-2 max-w-3xl text-sm text-gray-600 dark:text-gray-300">
-                Consulte as manutenções, trocas de peças, envios para
-                assistência e reparos concluídos em cada equipamento.
-              </p>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300 sm:text-base">
+                  Acompanhe manutenções, trocas de peças, envios para assistência e reparos concluídos em um só lugar.
+                </p>
+              </div>
+
+              <Link
+                href="/cadastros"
+                className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 dark:focus-visible:ring-offset-[#303035]"
+              >
+                <span aria-hidden="true" className="text-lg leading-none">+</span>
+                Registrar serviço
+              </Link>
             </div>
 
-            <Link
-              href="/cadastros"
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200"
-            >
-              + Registrar serviço
-            </Link>
-          </div>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 p-4 transition hover:border-gray-300 hover:shadow-sm dark:border-[#505057] dark:bg-[#38383f] dark:hover:border-[#6a6a72] sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total de serviços</p>
+                    <p className="mt-3 text-3xl font-bold tracking-tight text-gray-950 dark:text-white sm:text-4xl">
+                      {carregando ? "—" : totalServicos}
+                    </p>
+                  </div>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-200 text-lg text-gray-800 dark:bg-[#4a4a52] dark:text-gray-100" aria-hidden="true">▤</span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-gray-500 dark:text-gray-400">Todos os registros de manutenção e reparo</p>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-gray-800 dark:bg-gray-200" />
+              </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-xl border border-gray-300 bg-gray-100 p-4 dark:border-gray-600 dark:bg-[#303030]">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Total de serviços
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
-                {carregando ? "—" : totalServicos}
-              </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Manutenções, peças e reparos
-              </p>
-            </div>
+              <div className="group relative overflow-hidden rounded-2xl border border-sky-200 bg-sky-50/70 p-4 transition hover:border-sky-300 hover:shadow-sm dark:border-sky-900/70 dark:bg-sky-950/20 dark:hover:border-sky-800 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-sky-900 dark:text-sky-200">Manutenções e peças</p>
+                    <p className="mt-3 text-3xl font-bold tracking-tight text-sky-950 dark:text-white sm:text-4xl">
+                      {carregando ? "—" : totalManutencoes}
+                    </p>
+                  </div>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-lg text-sky-800 dark:bg-sky-900/50 dark:text-sky-200" aria-hidden="true">⚙</span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-sky-800/80 dark:text-sky-200/80">Serviços internos e reposições</p>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-sky-500" />
+              </div>
 
-            <div className="rounded-xl border border-gray-300 bg-gray-100 p-4 dark:border-gray-600 dark:bg-[#303030]">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Equipamentos atendidos
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
-                {carregando ? "—" : equipamentosAtendidos}
-              </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Equipamentos com ao menos um serviço
-              </p>
-            </div>
+              <div className="group relative overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/70 p-4 transition hover:border-amber-300 hover:shadow-sm dark:border-amber-900/70 dark:bg-amber-950/20 dark:hover:border-amber-800 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-200">Envios para reparo</p>
+                    <p className="mt-3 text-3xl font-bold tracking-tight text-amber-950 dark:text-white sm:text-4xl">
+                      {carregando ? "—" : totalEnviosReparo}
+                    </p>
+                  </div>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-lg text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" aria-hidden="true">↗</span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-amber-800/80 dark:text-amber-200/80">Equipamentos encaminhados à assistência</p>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-amber-500" />
+              </div>
 
-            <div className="rounded-xl border border-gray-300 bg-gray-100 p-4 dark:border-gray-600 dark:bg-[#303030]">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Manutenções e peças
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
-                {carregando ? "—" : totalManutencoes}
-              </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Serviços internos e substituições
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-gray-300 bg-gray-100 p-4 dark:border-gray-600 dark:bg-[#303030]">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Eventos de reparo
-              </p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
-                {carregando ? "—" : totalReparos}
-              </p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Envios e retornos registrados
-              </p>
+              <div className="group relative overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 transition hover:border-emerald-300 hover:shadow-sm dark:border-emerald-900/70 dark:bg-emerald-950/20 dark:hover:border-emerald-800 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-900 dark:text-emerald-200">Reparos concluídos</p>
+                    <p className="mt-3 text-3xl font-bold tracking-tight text-emerald-950 dark:text-white sm:text-4xl">
+                      {carregando ? "—" : totalReparosConcluidos}
+                    </p>
+                  </div>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-lg text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200" aria-hidden="true">✓</span>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-emerald-800/80 dark:text-emerald-200/80">Retornos registrados após o reparo</p>
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-emerald-500" />
+              </div>
             </div>
           </div>
         </header>
 
-        <section className="mt-5 grid gap-3 rounded-2xl border border-gray-300 bg-white p-4 shadow-sm sm:grid-cols-[1fr_260px] dark:border-gray-600 dark:bg-[#383838]">
-          <input
-            value={busca}
-            onChange={(event) => setBusca(event.target.value)}
-            placeholder="Buscar patrimônio, equipamento, assistência, responsável ou descrição..."
-            className={campo}
-          />
-
-          <select
-            value={filtroTipo}
-            onChange={(event) => setFiltroTipo(event.target.value)}
-            className={campo}
-          >
-            <option value="todos">Todos os registros</option>
-            {Object.entries(TIPOS).map(([valor, nome]) => (
-              <option key={valor} value={valor}>
-                {nome}
-              </option>
-            ))}
-          </select>
+        <section className="mt-5 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-[#4c4c52] dark:bg-[#303035] sm:p-5">
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Localizar registros</h2>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Pesquise por equipamento ou filtre pelo tipo de serviço.</p>
+            </div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{lista.length} resultado(s)</p>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <label className="relative block">
+              <span className="sr-only">Buscar no histórico</span>
+              <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-gray-400">⌕</span>
+              <input
+                value={busca}
+                onChange={(event) => setBusca(event.target.value)}
+                placeholder="Buscar patrimônio, equipamento, assistência, responsável ou descrição..."
+                aria-label="Buscar no histórico de serviços"
+                className={campo + " pl-11"}
+              />
+            </label>
+            <label className="block">
+              <span className="sr-only">Filtrar por tipo de serviço</span>
+              <select
+                value={filtroTipo}
+                onChange={(event) => setFiltroTipo(event.target.value)}
+                aria-label="Filtrar por tipo de serviço"
+                className={campo}
+              >
+                <option value="todos">Todos os registros</option>
+                {Object.entries(TIPOS).map(([valor, nome]) => (
+                  <option key={valor} value={valor}>
+                    {nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </section>
 
         {erro && (
@@ -330,8 +362,8 @@ export default function HistoricoPage() {
             </Link>
           </div>
         ) : (
-          <section className="mt-5 overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm dark:border-gray-600 dark:bg-[#383838]">
-            <div className="flex flex-col gap-1 border-b border-gray-200 px-5 py-4 dark:border-gray-600 sm:flex-row sm:items-center sm:justify-between">
+          <section className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-[#4c4c52] dark:bg-[#303035]">
+            <div className="flex flex-col gap-2 border-b border-gray-200 bg-gray-50/80 px-5 py-4 dark:border-[#4c4c52] dark:bg-[#35353b] sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="font-semibold text-gray-900 dark:text-white">
                   Registros de serviço · {unidadeAtiva}
@@ -350,7 +382,7 @@ export default function HistoricoPage() {
               {lista.map((item) => (
                 <article
                   key={item.id}
-                  className="p-5 transition hover:bg-gray-50 dark:hover:bg-[#404040] sm:p-6"
+                  className="p-5 transition-colors hover:bg-gray-50/80 dark:hover:bg-[#38383f] sm:p-6"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0 flex-1">
