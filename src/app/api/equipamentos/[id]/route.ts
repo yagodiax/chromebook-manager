@@ -150,6 +150,15 @@ export async function PATCH(
     const body = entrada as Record<string, unknown>;
 
     const patrimonio = texto(body.patrimonio) || null;
+    if (patrimonio) {
+      const [duplicados] = await pool.execute<RowDataPacket[]>(
+        "SELECT id FROM equipamentos WHERE unidade_id = ? AND patrimonio = ? AND id <> ? LIMIT 1",
+        [equipamento.unidade_id, patrimonio, id],
+      );
+      if (duplicados.length > 0) {
+        return erroJson("Já existe um equipamento com essa identificação nesta unidade. Escolha outro número.", 409);
+      }
+    }
     const tipo = texto(body.tipo);
     const fabricante = texto(body.fabricante) || null;
     const modelo = texto(body.modelo) || null;
