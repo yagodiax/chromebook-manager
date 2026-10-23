@@ -56,45 +56,40 @@ export default function CadastroPage() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
+  const [patrimonioEditadoManualmente, setPatrimonioEditadoManualmente] = useState(false);
+  const [consultandoPatrimonio, setConsultandoPatrimonio] = useState(false);
+
   useEffect(() => {
-    if (!unidadeCarregada || patrimonio.trim()) return;
+    if (!unidadeCarregada || patrimonioEditadoManualmente) return;
 
     let cancelado = false;
 
     async function sugerirPatrimonio() {
+      setConsultandoPatrimonio(true);
       try {
         const resposta = await fetch(
-          `/api/equipamentos?unidade=${encodeURIComponent(unidadeAtiva)}`,
+          `/api/equipamentos?proximoPatrimonio=1&tipo=${encodeURIComponent(tipo)}`,
           { cache: "no-store", credentials: "same-origin" },
         );
-        if (!resposta.ok) return;
-
-        const dados: unknown = await resposta.json();
-        if (!Array.isArray(dados)) return;
-
-        const usados = new Set<number>();
-        for (const item of dados as { patrimonio?: unknown }[]) {
-          const correspondencia = /^CHROME-(\\d+)$/i.exec(
-            String(item.patrimonio ?? "").trim(),
-          );
-          if (correspondencia) usados.add(Number(correspondencia[1]));
+        const dados = await resposta.json().catch(() => ({}));
+        if (!resposta.ok) {
+          throw new Error(dados.erro || "Não foi possível consultar uma identificação livre.");
         }
-
-        let proximo = 1;
-        while (usados.has(proximo)) proximo++;
-        const sugestao = `CHROME-${String(proximo).padStart(3, "0")}`;
-
+        if (!cancelado && typeof dados.patrimonio === "string") {
+          setPatrimonio(dados.patrimonio);
+        }
+      } catch (erroConsulta) {
         if (!cancelado) {
-          setPatrimonio((atual) => atual.trim() ? atual : sugestao);
+          setErro(erroConsulta instanceof Error ? erroConsulta.message : "Erro ao consultar identificação.");
         }
-      } catch {
-        // A API também gera o patrimônio automaticamente ao salvar.
+      } finally {
+        if (!cancelado) setConsultandoPatrimonio(false);
       }
     }
 
     void sugerirPatrimonio();
     return () => { cancelado = true; };
-  }, [unidadeAtiva, unidadeCarregada, patrimonio]);
+  }, [tipo, unidadeAtiva, unidadeCarregada, patrimonioEditadoManualmente]);
 
   function alterarTipo(novoTipo: Tipo) {
     setTipo(novoTipo);
@@ -264,11 +259,19 @@ export default function CadastroPage() {
                   id="patrimonio"
                   className={campo}
                   value={patrimonio}
-                  onChange={(event) => setPatrimonio(event.target.value)}
-                  placeholder="CHROME-001"
+                  onChange={(event) => {
+                    setPatrimonioEditadoManualmente(true);
+                    setPatrimonio(event.target.value);
+                  }}
+                  placeholder={tipo === "chromebook" ? "CHROME-001" : tipo === "notebook" ? "NOTE-001" : tipo === "projetor" ? "PROJ-001" : tipo === "catraca" ? "CATRACA-001" : "IMPRESSORA-001"}
                 />
+                {consultandoPatrimonio && (
+                  <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    Consultando a próxima identificação livre...
+                  </p>
+                )}
                 <p className="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                  Identificação gerada automaticamente no padrão CHROME-001, usando o menor número livre. Não há limite máximo; você pode alterar o valor, desde que ele seja único.
+                  Identificação sugerida pelo sistema conforme o tipo selecionado (ex.: CHROME-001 para Chromebook e NOTE-001 para notebook). A consulta considera todas as unidades e usa o menor número livre, sem limite máximo. Você pode editar o valor manualmente, desde que ele seja único.
                 </p>
               </div>
 
