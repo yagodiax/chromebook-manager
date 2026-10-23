@@ -44,6 +44,7 @@ type HistoricoRow = RowDataPacket & {
   equipamento_fabricante: string | null;
   equipamento_modelo: string | null;
   equipamento_localizacao: string | null;
+  equipamento_unidade_id: UnidadeId;
   tipo: string;
   categoria: string | null;
   data_ocorrencia: string | Date;
@@ -308,11 +309,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const unidadeSolicitada = url.searchParams.get("unidade");
 
-  if (
-    administradorGeral &&
-    unidadeSolicitada &&
-    !unidadeValida(unidadeSolicitada)
-  ) {
+  if (unidadeSolicitada && !unidadeValida(unidadeSolicitada)) {
     return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
   }
 
@@ -370,6 +367,7 @@ export async function GET(request: Request) {
           e.fabricante AS equipamento_fabricante,
           e.modelo AS equipamento_modelo,
           e.localizacao AS equipamento_localizacao,
+          e.unidade_id AS equipamento_unidade_id,
           h.tipo,
           h.categoria,
           h.data_ocorrencia,
@@ -448,6 +446,7 @@ export async function GET(request: Request) {
       rows.map((row) => ({
         id: row.id,
         equipamentoId: row.equipamento_id,
+        unidadeId: row.equipamento_unidade_id,
         equipamento: {
           patrimonio: row.equipamento_patrimonio ?? "",
           tipo: row.equipamento_tipo,
