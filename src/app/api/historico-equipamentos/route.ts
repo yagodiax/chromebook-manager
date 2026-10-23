@@ -1,4 +1,3 @@
-
 import { randomUUID } from "node:crypto";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { NextResponse } from "next/server";
@@ -279,22 +278,14 @@ function validarDados(
       if (
         !anexo ||
         typeof anexo.nome !== "string" ||
+        anexo.nome.trim() === "" ||
         typeof anexo.dados !== "string" ||
+        anexo.dados.length > MAX_TAMANHO_ANEXO * 1.5 ||
         !Number.isFinite(anexo.tamanho) ||
-        anexo.tamanho < 0
+        anexo.tamanho < 0 ||
+        anexo.tamanho > MAX_TAMANHO_ANEXO
       ) {
-        return "Um dos anexos é inválido.";
-      }
-
-      if (anexo.tamanho > MAX_TAMANHO_ANEXO) {
-        return "Cada anexo deve ter no máximo 5 MB.";
-      }
-
-      if (
-        Buffer.byteLength(anexo.dados, "utf8") >
-        MAX_TAMANHO_ANEXO * 1.5
-      ) {
-        return "Um dos anexos ultrapassa o tamanho permitido.";
+        return "Um dos anexos é inválido ou ultrapassa 5 MB.";
       }
     }
   }
@@ -302,68 +293,56 @@ function validarDados(
   return null;
 }
 
-export async function GET(request: Request) {
+async function obterUnidadeSolicitada(request: Request): Promise<{
+  unidadeId: UnidadeId | null;
+  erro: NextResponse | null;
+}> {
   const autenticacao = await verificarAutenticacao();
 
   if (autenticacao.erro) {
-    return autenticacao.erro;
+    return { unidadeId: null, erro: autenticacao.erro };
   }
 
   const usuario = autenticacao.usuario;
-  const administradorGeral = ehAdministradorGeral(usuario);
-
   const url = new URL(request.url);
-  const unidadeSolicitada = url.searchParams.get("unidade");
+  const unidadeParam = url.searchParams.get("unidade");
 
-  if (unidadeSolicitada && !unidadeValida(unidadeSolicitada)) {
-    return erroJson("Selecione uma unidade válida: CE ou JP.", 400);
+  if (unidadeParam && !unidadeValida(unidadeParam)) {
+    return {
+      unidadeId: null,
+      erro: erroJson("Unidade inválida."),
+    };
   }
 
-  if (!administradorGeral && usuario.unidade_id !== "AMBOS" && unidadeSolicitada && unidadeSolicitada !== usuario.unidade_id) {
-    return erroJson(
-      "Você não tem permissão para acessar outra unidade.",
-      403,
-    );
+  if (unidadeParam && !podeAcessarUnidade(usuario, unidadeParam)) {
+    return {
+      unidadeId: null,
+      erro: erroJson("Você não tem permissão para consultar esta unidade.", 403),
+    };
+  }
+
+  if (ehAdministradorGeral(usuario)) {
+    return {
+      unidadeId: unidadeParam as UnidadeId | null,
+      erro: null,
+    };
+  }
+
+  return {
+    unidadeId: unidadeParam as UnidadeId | null,
+    erro: null,
+  };
+}
+
+export async function GET(request: Request) {
+  const { unidadeId, erro } = await obterUnidadeSolicitada(request);
+
+  if (erro) {
+    return erro;
   }
 
   try {
-    const equipamentoId = url.searchParams.get("equipamentoId");
-    const tipoEquipamento = url.searchParams.get("tipoEquipamento");
-
-    const condicoes: string[] = [];
-    const parametros: (string | number)[] = [];
-
-    if (unidadeValida(unidadeSolicitada)) {
-      if (!podeAcessarUnidade(usuario, unidadeSolicitada)) {
-        return erroJson("Você não tem permissão para acessar outra unidade.", 403);
-      }
-      condicoes.push("e.unidade_id = ?");
-      parametros.push(unidadeSolicitada);
-    } else if (usuario.unidade_id === "AMBOS" || administradorGeral) {
-      // Sem unidade explícita, usuários com acesso duplo consultam ambas.
-    } else {
-      if (!unidadeValida(usuario.unidade_id)) {
-        return erroJson("Usuário sem unidade válida configurada.", 403);
-      }
-      condicoes.push("e.unidade_id = ?");
-      parametros.push(usuario.unidade_id);
-    }
-
-    if (equipamentoId) {
-      condicoes.push("h.equipamento_id = ?");
-      parametros.push(equipamentoId);
-    }
-
-    if (tipoEquipamento) {
-      condicoes.push("e.tipo = ?");
-      parametros.push(tipoEquipamento);
-    }
-
-    const where = condicoes.length
-      ? "WHERE " + condicoes.join(" AND ")
-      : "";
-
-    const [rows] = await pool.query<HistoricoRow[]>(
+    const [registros] = await pool.execute<HistoricoRow[]>(
       `
         SELECT
           h.id,
@@ -387,78 +366,76 @@ export async function GET(request: Request) {
           h.created_at
         FROM historico_equipamentos h
         INNER JOIN equipamentos e ON e.id = h.equipamento_id
-        ${where}
+        ${unidadeId ? "WHERE e.unidade_id = ?" : ""}
         ORDER BY h.data_ocorrencia DESC, h.created_at DESC
       `,
-      parametros,
+      unidadeId ? [unidadeId] : [],
     );
 
-    const ids = rows.map((row) => row.id);
-
+    const ids = registros.map((registro) => registro.id);
     const anexosPorHistorico: Record<
       string,
-      { id: number; nome: string; tipo: string; tamanho: number }[]
+      {
+        id: number;
+        nome: string;
+        tipo: string;
+        tamanho: number;
+        dados: string;
+      }[]
     > = {};
 
     if (ids.length) {
       const placeholders = ids.map(() => "?").join(", ");
 
-      const [
-        anexos,
-      ] = await pool.query<
+      const [anexos] = await pool.execute<
         (
           RowDataPacket & {
             id: number;
             historico_id: string;
             nome_arquivo: string;
             tipo_mime: string | null;
-            tamanho_bytes: number | string | null;
+            tamanho_bytes: number;
+            conteudo_base64: string;
           }
         )[]
       >(
         `
           SELECT
-            a.id,
-            a.historico_id,
-            a.nome_arquivo,
-            a.tipo_mime,
-            a.tamanho_bytes
-          FROM historico_equipamento_anexos a
-          INNER JOIN historico_equipamentos h
-            ON h.id = a.historico_id
-          INNER JOIN equipamentos e
-            ON e.id = h.equipamento_id
-          WHERE a.historico_id IN (${placeholders})
-          ORDER BY a.id
+            id,
+            historico_id,
+            nome_arquivo,
+            tipo_mime,
+            tamanho_bytes,
+            conteudo_base64
+          FROM historico_equipamento_anexos
+          WHERE historico_id IN (${placeholders})
+          ORDER BY id ASC
         `,
         ids,
       );
 
       for (const anexo of anexos) {
-        if (!anexosPorHistorico[anexo.historico_id]) {
-          anexosPorHistorico[anexo.historico_id] = [];
-        }
-
-        anexosPorHistorico[anexo.historico_id].push({
-          id: Number(anexo.id),
+        (anexosPorHistorico[anexo.historico_id] ??= []).push({
+          id: anexo.id,
           nome: anexo.nome_arquivo,
           tipo: anexo.tipo_mime ?? "application/octet-stream",
-          tamanho: Number(anexo.tamanho_bytes ?? 0),
+          tamanho: Number(anexo.tamanho_bytes),
+          dados: anexo.conteudo_base64,
         });
       }
     }
 
     return NextResponse.json(
-      rows.map((row) => ({
+      registros.map((row) => ({
         id: row.id,
         equipamentoId: row.equipamento_id,
-        unidadeId: row.equipamento_unidade_id,
         equipamento: {
           patrimonio: row.equipamento_patrimonio ?? "",
           tipo: row.equipamento_tipo,
           fabricante: row.equipamento_fabricante ?? "",
           modelo: row.equipamento_modelo ?? "",
           localizacao: row.equipamento_localizacao ?? "",
+          unidadeId: row.equipamento_unidade_id,
         },
         tipo: row.tipo,
         categoria: row.categoria ?? "",
@@ -554,6 +531,35 @@ export async function POST(request: Request) {
         "Você não tem permissão para registrar histórico neste equipamento.",
         403,
       );
+    }
+
+    if (dados.tipo === "retorno-de-reparo") {
+      if (equipamento.status !== "em-reparo") {
+        await conexao.rollback();
+        transacaoIniciada = false;
+        return erroJson("O retorno só pode ser registrado para um equipamento que esteja em reparo.");
+      }
+
+      const [eventos] = await conexao.execute<
+        (RowDataPacket & { tipo: string })[]
+      >(
+        `
+          SELECT tipo
+          FROM historico_equipamentos
+          WHERE equipamento_id = ?
+            AND tipo IN ('envio-para-reparo', 'retorno-de-reparo')
+          ORDER BY created_at DESC, data_ocorrencia DESC
+          LIMIT 1
+          FOR UPDATE
+        `,
+        [dados.equipamentoId],
+      );
+
+      if (eventos[0]?.tipo !== "envio-para-reparo") {
+        await conexao.rollback();
+        transacaoIniciada = false;
+        return erroJson("Registre primeiro o envio para reparo. Este equipamento não tem um envio pendente de retorno.");
+      }
     }
 
     const id = randomUUID();
@@ -709,6 +715,7 @@ export async function PUT(request: Request) {
         RowDataPacket & {
           id: string;
           equipamento_id: string;
+          tipo_atual: string;
           unidade_id: string;
         }
       )[]
@@ -717,6 +724,7 @@ export async function PUT(request: Request) {
         SELECT
           h.id,
           h.equipamento_id,
+          h.tipo AS tipo_atual,
           e.unidade_id
         FROM historico_equipamentos h
         INNER JOIN equipamentos e ON e.id = h.equipamento_id
@@ -739,6 +747,17 @@ export async function PUT(request: Request) {
       transacaoIniciada = false;
 
       return erroJson("Registro não encontrado.", 404);
+    }
+
+    if (
+      existente.tipo_atual !== dados.tipo &&
+      [existente.tipo_atual, dados.tipo].some((tipo) =>
+        tipo === "envio-para-reparo" || tipo === "retorno-de-reparo"
+      )
+    ) {
+      await conexao.rollback();
+      transacaoIniciada = false;
+      return erroJson("Não é permitido transformar um envio ou retorno em outro tipo de registro. Preserve a movimentação original e registre um novo evento.");
     }
 
     if (existente.equipamento_id !== dados.equipamentoId) {
@@ -806,35 +825,106 @@ export async function PUT(request: Request) {
       ],
     );
 
-    if (dados.tipo === "envio-para-reparo") {
-      await conexao.execute<ResultSetHeader>(
-        `
-          UPDATE equipamentos
-          SET status = 'em-reparo'
-          WHERE id = ? AND unidade_id = ?
-        `,
-        [dados.equipamentoId, equipamento.unidade_id],
-      );
-    } else if (dados.tipo === "retorno-de-reparo") {
-      await conexao.execute<ResultSetHeader>(
-        `
-          UPDATE equipamentos
-          SET status = ?
-          WHERE id = ? AND unidade_id = ?
-        `,
-        [
-          dados.statusFinal,
-          dados.equipamentoId,
-          equipamento.unidade_id,
-        ],
-      );
+    return await conexao
+      .commit()
+      .then(() => {
+        transacaoIniciada = false;
+
+        return NextResponse.json(
+          { id, mensagem: "Registro atualizado com sucesso." },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      });
+  } catch (erro) {
+    if (transacaoIniciada) {
+      try {
+        await conexao.rollback();
+      } catch {
+        // A transação pode já ter sido encerrada.
+      }
     }
+
+    console.error("Erro ao atualizar histórico:", erro);
+
+    return erroJson("Não foi possível atualizar o registro do histórico.", 500);
+  } finally {
+    conexao.release();
+  }
+}
+
+export async function DELETE(request: Request) {
+  const autenticacao = await verificarAutenticacao();
+
+  if (autenticacao.erro) {
+    return autenticacao.erro;
+  }
+
+  const usuario = autenticacao.usuario;
+  const conexao = await pool.getConnection();
+  let transacaoIniciada = false;
+
+  try {
+    const body: unknown = await request.json();
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return erroJson("Os dados enviados são inválidos.");
+    }
+
+    const id = texto((body as Record<string, unknown>).id);
+
+    if (!id) {
+      return erroJson("Informe o ID do registro.");
+    }
+
+    await conexao.beginTransaction();
+    transacaoIniciada = true;
+
+    const [registros] = await conexao.execute<
+      (RowDataPacket & { id: string; equipamento_id: string; unidade_id: string; tipo: string; status: string })[]
+    >(
+      `
+        SELECT h.id, h.equipamento_id, e.unidade_id, h.tipo, e.status
+        FROM historico_equipamentos h
+        INNER JOIN equipamentos e ON e.id = h.equipamento_id
+        WHERE h.id = ?
+        FOR UPDATE
+      `,
+      [id],
+    );
+
+    const registro = registros[0];
+
+    if (!registro) {
+      await conexao.rollback();
+      transacaoIniciada = false;
+      return erroJson("Registro não encontrado.", 404);
+    }
+
+    if (!podeAcessarUnidade(usuario, registro.unidade_id)) {
+      await conexao.rollback();
+      transacaoIniciada = false;
+      return erroJson("Registro não encontrado.", 404);
+    }
+
+    if (registro.tipo === "envio-para-reparo" && registro.status === "em-reparo") {
+      await conexao.rollback();
+      transacaoIniciada = false;
+      return erroJson("Não é possível excluir um envio enquanto o equipamento estiver aguardando retorno.");
+    }
+
+    await conexao.execute<ResultSetHeader>(
+      `
+        DELETE FROM historico_equipamentos
+        WHERE id = ?
+      `,
+      [id],
+    );
 
     await conexao.commit();
     transacaoIniciada = false;
 
     return NextResponse.json(
-      { id, mensagem: "Registro atualizado com sucesso." },
+      { id, mensagem: "Registro excluído com sucesso." },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (erro) {
@@ -846,9 +936,9 @@ export async function PUT(request: Request) {
       }
     }
 
-    console.error("Erro ao editar histórico:", erro);
+    console.error("Erro ao excluir histórico:", erro);
 
-    return erroJson("Não foi possível atualizar o registro do histórico.", 500);
+    return erroJson("Não foi possível excluir o registro do histórico.", 500);
   } finally {
     conexao.release();
   }
