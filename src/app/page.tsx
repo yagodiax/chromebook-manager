@@ -231,6 +231,40 @@ export default function Home() {
       .slice(0, 5);
   }, [historico]);
 
+  const maisManutencoes = useMemo(() => {
+    const mapa = new Map<
+      string,
+      {
+        id: string;
+        nome: string;
+        tipo: string;
+        modelo: string;
+        manutencoes: number;
+      }
+    >();
+
+    historico
+      .filter((item) => item.tipo === "manutencao")
+      .forEach((item) => {
+        const atual = mapa.get(item.equipamentoId) || {
+          id: item.equipamentoId,
+          nome: item.equipamento.patrimonio || item.equipamentoId,
+          tipo: TIPOS[item.equipamento.tipo] || item.equipamento.tipo,
+          modelo: [item.equipamento.fabricante, item.equipamento.modelo]
+            .filter(Boolean)
+            .join(" "),
+          manutencoes: 0,
+        };
+
+        atual.manutencoes += 1;
+        mapa.set(item.equipamentoId, atual);
+      });
+
+    return Array.from(mapa.values())
+      .sort((a, b) => b.manutencoes - a.manutencoes || a.nome.localeCompare(b.nome))
+      .slice(0, 5);
+  }, [historico]);
+
   const cards = [
     {
       titulo: "Equipamentos cadastrados",
@@ -498,7 +532,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="mt-3 divide-y divide-gray-200 dark:divide-gray-600">
-                {historico.slice(0, 6).map((item) => (
+                {historico.slice(0, 5).map((item) => (
                   <div key={item.id} className="py-4 first:pt-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
@@ -538,72 +572,133 @@ export default function Home() {
           </article>
         </section>
 
-        <section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-                Financeiro · {unidadeAtiva}
-              </p>
-
-              <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Equipamentos com maior gasto em reparos
-              </h2>
-
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                Ranking baseado nos custos registrados nos retornos da assistência.
-              </p>
-            </div>
-
-            <Link
-              href="/relatorios/gastos"
-              className="rounded-md px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              Ver relatório →
-            </Link>
+                <section className="mt-6">
+          <div className="mb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+              Análise preventiva · {unidadeAtiva}
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+              Equipamentos que merecem atenção
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              Identifique os equipamentos com manutenção recorrente ou maior custo acumulado de reparo.
+            </p>
           </div>
 
-          {carregando ? (
-            <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              Carregando gastos...
-            </p>
-          ) : maioresGastos.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              Ainda não há custos de reparos registrados.
-            </p>
-          ) : (
-            <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">
-              {maioresGastos.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 py-3"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
-                      {item.nome}
-                    </p>
-
-                    <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-                      {item.tipo}
-                      {item.modelo ? ` · ${item.modelo}` : ""}
-                      {" · "}
-                      {item.reparos} reparo(s)
-                    </p>
-                  </div>
-
-                  <strong className="whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">
-                    {moeda(item.total)}
-                  </strong>
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <article className="min-w-0 rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+                    Recorrência
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Mais manutenções
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                    Top 5 por quantidade de registros de manutenção interna.
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-gray-100 text-lg text-gray-700 dark:border-gray-600 dark:bg-[#464646] dark:text-gray-100">
+                  ⚒
+                </span>
+              </div>
+
+              {carregando ? (
+                <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Calculando manutenções...
+                </p>
+              ) : maisManutencoes.length === 0 ? (
+                <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Ainda não há manutenções internas registradas.
+                </p>
+              ) : (
+                <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">
+                  {maisManutencoes.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                          {item.nome}
+                        </p>
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                          {item.tipo}{item.modelo ? ` · ${item.modelo}` : ""}
+                        </p>
+                      </div>
+                      <strong className="whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {item.manutencoes} {item.manutencoes === 1 ? "manutenção" : "manutenções"}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600">
+                <Link href="/historico" className="text-sm font-semibold text-gray-700 hover:underline dark:text-gray-200">
+                  Consultar histórico →
+                </Link>
+              </div>
+            </article>
+
+            <article className="min-w-0 rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
+                    Impacto financeiro
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Maiores gastos com reparo
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                    Top 5 pelo total de custos registrados nos retornos da assistência.
+                  </p>
+                </div>
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-gray-100 text-lg text-gray-700 dark:border-gray-600 dark:bg-[#464646] dark:text-gray-100">
+                  R$
+                </span>
+              </div>
+
+              {carregando ? (
+                <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Calculando custos...
+                </p>
+              ) : maioresGastos.length === 0 ? (
+                <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                  Ainda não há custos positivos de reparo registrados.
+                </p>
+              ) : (
+                <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">
+                  {maioresGastos.map((item, index) => (
+                    <div key={item.id} className="flex items-center gap-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                          {item.nome}
+                        </p>
+                        <p className="truncate text-xs text-gray-500 dark:text-gray-400">
+                          {item.tipo}{item.modelo ? ` · ${item.modelo}` : ""} · {item.reparos} {item.reparos === 1 ? "reparo" : "reparos"}
+                        </p>
+                      </div>
+                      <strong className="whitespace-nowrap text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {moeda(item.total)}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600">
+                <Link href="/relatorios/gastos" className="text-sm font-semibold text-gray-700 hover:underline dark:text-gray-200">
+                  Ver relatório de gastos →
+                </Link>
+              </div>
+            </article>
+          </div>
         </section>
 
-        <section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+<section className="mt-5 rounded-xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
