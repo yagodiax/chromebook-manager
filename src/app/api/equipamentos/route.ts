@@ -123,7 +123,7 @@ async function obterProximoPatrimonio(tipo: TipoEquipamento): Promise<string> {
   const usados = new Set<number>();
 
   for (const row of rows) {
-    const correspondencia = new RegExp("^" + prefixo + "-(\\\\d+)$", "i").exec(
+    const correspondencia = new RegExp("^" + prefixo + "-(\\d+)$", "i").exec(
       String(row.patrimonio ?? "").trim(),
     );
     if (correspondencia) usados.add(Number(correspondencia[1]));
