@@ -250,7 +250,7 @@ export async function POST(request: Request) {
 
     const body = entrada as Record<string, unknown>;
 
-    const patrimonio = texto(body.patrimonio) || null;
+    let patrimonio = texto(body.patrimonio) || null;
     const tipo = texto(body.tipo);
     const fabricante = texto(body.fabricante) || null;
     const modelo = texto(body.modelo) || null;
@@ -315,6 +315,27 @@ export async function POST(request: Request) {
         "As observações ultrapassam o tamanho permitido.",
         400,
       );
+    }
+
+    if (!patrimonio) {
+      const [patrimoniosExistentes] = await pool.execute<RowDataPacket[]>(
+        "SELECT patrimonio FROM equipamentos WHERE unidade_id = ? AND patrimonio IS NOT NULL",
+        [unidade],
+      );
+      const usados = new Set(
+        patrimoniosExistentes.map((row) => String(row.patrimonio ?? "").trim()),
+      );
+      let proximo = 1;
+      while (usados.has(String(proximo))) proximo++;
+      patrimonio = String(proximo);
+    }
+
+    const [patrimonioDuplicado] = await pool.execute<RowDataPacket[]>(
+      "SELECT id FROM equipamentos WHERE unidade_id = ? AND patrimonio = ? LIMIT 1",
+      [unidade, patrimonio],
+    );
+    if (patrimonioDuplicado.length > 0) {
+      return erroJson("Já existe um equipamento com essa identificação nesta unidade. Escolha outro número.", 409);
     }
 
     const id = `EQ-${randomUUID()}`;
