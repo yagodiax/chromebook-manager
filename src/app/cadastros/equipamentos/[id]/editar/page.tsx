@@ -141,7 +141,7 @@ export default function EditarEquipamentoPage() {
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7 dark:border-[#505057] dark:bg-[#444449]">
         <h2 className="text-lg font-semibold text-gray-950 dark:text-white">Identificação e localização</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <div><label className={rotulo} htmlFor="patrimonio">Patrimônio / identificação</label><input id="patrimonio" className={campo} value={patrimonio} onChange={(e) => setPatrimonio(e.target.value)} /></div>
+          <div><label className={rotulo} htmlFor="patrimonio">Patrimônio / identificação</label><input id="patrimonio" className={campo} value={patrimonio} onChange={(e) => setPatrimonio(e.target.value)} /><p className="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">A identificação precisa ser única nesta unidade. Você pode alterá-la, desde que o novo valor não esteja em uso.</p></div>
           <div><label className={rotulo} htmlFor="tipo">Tipo</label><select id="tipo" className={campo} value={tipo} onChange={(e) => alterarTipo(e.target.value as Tipo)}>{TIPOS.map((item) => <option key={item.valor} value={item.valor}>{item.nome}</option>)}</select></div>
           <div><label className={rotulo} htmlFor="fabricante">Fabricante</label><input id="fabricante" className={campo} value={fabricante} onChange={(e) => setFabricante(e.target.value)} /></div>
           <div><label className={rotulo} htmlFor="modelo">Modelo</label><input id="modelo" className={campo} value={modelo} onChange={(e) => setModelo(e.target.value)} /></div>
