@@ -56,6 +56,42 @@ export default function CadastroPage() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
+  useEffect(() => {
+    if (!unidadeCarregada || patrimonio.trim()) return;
+
+    let cancelado = false;
+
+    async function sugerirPatrimonio() {
+      try {
+        const resposta = await fetch(
+          `/api/equipamentos?unidade=${encodeURIComponent(unidadeAtiva)}`,
+          { cache: "no-store", credentials: "same-origin" },
+        );
+        if (!resposta.ok) return;
+
+        const dados: unknown = await resposta.json();
+        if (!Array.isArray(dados)) return;
+
+        const usados = new Set(
+          dados
+            .map((item: { patrimonio?: unknown }) => String(item.patrimonio ?? "").trim())
+            .filter((valor: string) => /^\\d+$/.test(valor)),
+        );
+        let proximo = 1;
+        while (usados.has(String(proximo))) proximo++;
+
+        if (!cancelado) {
+          setPatrimonio((atual) => atual.trim() ? atual : String(proximo));
+        }
+      } catch {
+        // A API também gera o patrimônio automaticamente ao salvar.
+      }
+    }
+
+    void sugerirPatrimonio();
+    return () => { cancelado = true; };
+  }, [unidadeAtiva, unidadeCarregada, patrimonio]);
+
   function alterarTipo(novoTipo: Tipo) {
     setTipo(novoTipo);
     setDetalhes({});
@@ -225,8 +261,11 @@ export default function CadastroPage() {
                   className={campo}
                   value={patrimonio}
                   onChange={(event) => setPatrimonio(event.target.value)}
-                  placeholder="Ex.: PAT-001 ou etiqueta patrimonial"
+                  placeholder="Gerado automaticamente"
                 />
+                <p className="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  Identificação gerada automaticamente com o menor número livre (1 a 100 primeiro). Você pode alterar este valor, desde que ele ainda não esteja em uso.
+                </p>
               </div>
 
               <div>
