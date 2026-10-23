@@ -318,21 +318,28 @@ export async function POST(request: Request) {
     }
 
     if (!patrimonio) {
+      // Busca o menor número livre no padrão CHROME-001, sem limite máximo.
+      // A coluna patrimônio possui índice UNIQUE no banco, que protege contra duplicidade.
       const [patrimoniosExistentes] = await pool.execute<RowDataPacket[]>(
-        "SELECT patrimonio FROM equipamentos WHERE unidade_id = ? AND patrimonio IS NOT NULL",
-        [unidade],
+        "SELECT patrimonio FROM equipamentos WHERE patrimonio IS NOT NULL",
       );
-      const usados = new Set(
-        patrimoniosExistentes.map((row) => String(row.patrimonio ?? "").trim()),
-      );
+      const usados = new Set<number>();
+
+      for (const row of patrimoniosExistentes) {
+        const correspondencia = /^CHROME-(\\d+)$/i.exec(
+          String(row.patrimonio ?? "").trim(),
+        );
+        if (correspondencia) usados.add(Number(correspondencia[1]));
+      }
+
       let proximo = 1;
-      while (usados.has(String(proximo))) proximo++;
-      patrimonio = String(proximo);
+      while (usados.has(proximo)) proximo++;
+      patrimonio = `CHROME-${String(proximo).padStart(3, "0")}`;
     }
 
     const [patrimonioDuplicado] = await pool.execute<RowDataPacket[]>(
-      "SELECT id FROM equipamentos WHERE unidade_id = ? AND patrimonio = ? LIMIT 1",
-      [unidade, patrimonio],
+      "SELECT id FROM equipamentos WHERE patrimonio = ? LIMIT 1",
+      [patrimonio],
     );
     if (patrimonioDuplicado.length > 0) {
       return erroJson("Já existe um equipamento com essa identificação nesta unidade. Escolha outro número.", 409);
