@@ -263,7 +263,7 @@ export default function CadastroPage() {
                     setPatrimonioEditadoManualmente(true);
                     setPatrimonio(event.target.value);
                   }}
-                  placeholder={tipo === "chromebook" ? "CHROME-001" : tipo === "notebook" ? "NOTE-001" : tipo === "projetor" ? "PROJ-001" : tipo === "catraca" ? "CATRACA-001" : "IMPRESSORA-001"}
+                  placeholder={tipo === "chromebook" ? "CHROME-001" : tipo === "notebook" ? "NOTE-001" : tipo === "projetor" ? "PROJ-001" : tipo === "catraca" ? "CATRACA-001" : "IMP-001"}
                 />
                 {consultandoPatrimonio && (
                   <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
