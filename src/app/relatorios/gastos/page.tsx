@@ -9,6 +9,7 @@ type Periodo = "7-dias" | "30-dias" | "6-meses" | "1-ano" | "todo";
 type Registro = {
   id: string;
   equipamentoId: string;
+  unidadeId: "CE" | "JP";
   equipamento: { patrimonio: string; tipo: string; fabricante: string; modelo: string; localizacao: string };
   tipo: string; categoria: string; data: string; descricao: string; observacao: string;
   custo: number; destinoReparo: string; resultado: string;
@@ -47,6 +48,7 @@ export default function RelatorioGastosPage() {
     async function carregarRegistros() {
       setCarregando(true);
       setErro("");
+      setRegistros([]);
       setEquipamentoId("todos");
 
       try {
@@ -67,7 +69,11 @@ export default function RelatorioGastosPage() {
         }
 
         if (ativo) {
-          setRegistros(Array.isArray(dados) ? dados : []);
+          // Defesa adicional: só exibe registros da unidade solicitada.
+          const registrosDaUnidade = Array.isArray(dados)
+            ? (dados as Registro[]).filter((item) => item.unidadeId === unidadeAtiva)
+            : [];
+          setRegistros(registrosDaUnidade);
         }
       } catch (erro: unknown) {
         if (ativo) {
@@ -229,7 +235,7 @@ export default function RelatorioGastosPage() {
         </section>
 
         <section className="mt-5 rounded-2xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6 dark:border-[#2b454c] dark:bg-[#1c2a33]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-sky-700 dark:text-sky-300">Refine a consulta</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Filtros do relatório</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aplique um período e, se quiser, veja apenas um equipamento.</p></div><button type="button" onClick={() => { setPeriodo("1-ano"); setEquipamentoId("todos"); }} className="self-start rounded-lg px-3 py-2 text-xs font-bold text-teal-800 transition hover:bg-teal-50 dark:text-teal-200 dark:hover:bg-teal-950/40">Limpar filtros ↺</button></div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-sky-700 dark:text-sky-300">Refine a consulta</p><h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Filtros do relatório</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aplique um período e, se quiser, veja apenas um equipamento.</p></div><button type="button" onClick={() => { setPeriodo("1-ano"); setEquipamentoId("todos"); }} className="self-start rounded-lg border border-teal-700 bg-teal-800 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-teal-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 dark:border-teal-300 dark:bg-teal-200 dark:text-slate-950 dark:hover:bg-teal-100 dark:focus-visible:ring-offset-[#1c2a33]">Limpar filtros ↺</button></div>
           <div className="mt-5 grid gap-4 md:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Período</span><select id="periodo" className={campo} value={periodo} onChange={(e) => setPeriodo(e.target.value as Periodo)}><option value="7-dias">Últimos 7 dias</option><option value="30-dias">Últimos 30 dias</option><option value="6-meses">Últimos 6 meses</option><option value="1-ano">Últimos 12 meses (anual)</option><option value="todo">Todo o histórico</option></select></label><label className="block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-slate-600 dark:text-slate-300">Equipamento</span><select id="equipamento" className={campo} value={equipamentoId} onChange={(e) => setEquipamentoId(e.target.value)}><option value="todos">Todos os equipamentos</option>{equipamentos.map(({ id, equipamento }) => <option key={id} value={id}>{equipamento.patrimonio || id} · {TIPOS[equipamento.tipo] || equipamento.tipo} · {equipamento.modelo}</option>)}</select></label></div>
           <div className="mt-4 flex flex-wrap gap-2"><span className="rounded-lg bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-200">{filtrados.length} registro(s)</span><span className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">{retornos.length} retorno(s) contabilizados</span><span className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Envios não somam custo até o retorno</span></div>
         </section>
