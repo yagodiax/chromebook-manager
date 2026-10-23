@@ -107,6 +107,33 @@ function unidadeDoUsuario(usuario: UsuarioAutenticado): UnidadeId {
     : "CE";
 }
 
+const PREFIXOS_PATRIMONIO: Record<TipoEquipamento, string> = {
+  chromebook: "CHROME",
+  notebook: "NOTE",
+  projetor: "PROJ",
+  catraca: "CATRACA",
+  impressora: "IMPRESSORA",
+};
+
+async function obterProximoPatrimonio(tipo: TipoEquipamento): Promise<string> {
+  const prefixo = PREFIXOS_PATRIMONIO[tipo];
+  const [rows] = await pool.execute<RowDataPacket[]>(
+    "SELECT patrimonio FROM equipamentos WHERE patrimonio IS NOT NULL",
+  );
+  const usados = new Set<number>();
+
+  for (const row of rows) {
+    const correspondencia = new RegExp("^" + prefixo + "-(\\\\d+)$", "i").exec(
+      String(row.patrimonio ?? "").trim(),
+    );
+    if (correspondencia) usados.add(Number(correspondencia[1]));
+  }
+
+  let proximo = 1;
+  while (usados.has(proximo)) proximo++;
+  return `${prefixo}-${String(proximo).padStart(3, "0")}`;
+}
+
 function texto(valor: unknown): string {
   return typeof valor === "string" || typeof valor === "number"
     ? String(valor).trim()
@@ -164,6 +191,23 @@ export async function GET(request: Request) {
   const podeAlternarUnidade = administradorGeral || usuario.unidade_id === "AMBOS";
 
   const parametros = new URL(request.url).searchParams;
+  const tipoParaSugestao = parametros.get("tipo");
+  if (parametros.get("proximoPatrimonio") === "1") {
+    if (!TIPOS.includes(tipoParaSugestao as TipoEquipamento)) {
+      return erroJson("Selecione um tipo de equipamento válido.", 400);
+    }
+    try {
+      const patrimonio = await obterProximoPatrimonio(tipoParaSugestao as TipoEquipamento);
+      return NextResponse.json(
+        { patrimonio },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    } catch (erro) {
+      console.error("Erro ao gerar sugestão de patrimônio:", erro);
+      return erroJson("Não foi possível consultar uma identificação livre.", 500);
+    }
+  }
+
   const unidadeSolicitada = parametros.get("unidade");
 
   let unidade: UnidadeId;
@@ -318,23 +362,8 @@ export async function POST(request: Request) {
     }
 
     if (!patrimonio) {
-      // Busca o menor número livre no padrão CHROME-001, sem limite máximo.
-      // A coluna patrimônio possui índice UNIQUE no banco, que protege contra duplicidade.
-      const [patrimoniosExistentes] = await pool.execute<RowDataPacket[]>(
-        "SELECT patrimonio FROM equipamentos WHERE patrimonio IS NOT NULL",
-      );
-      const usados = new Set<number>();
-
-      for (const row of patrimoniosExistentes) {
-        const correspondencia = /^CHROME-(\\d+)$/i.exec(
-          String(row.patrimonio ?? "").trim(),
-        );
-        if (correspondencia) usados.add(Number(correspondencia[1]));
-      }
-
-      let proximo = 1;
-      while (usados.has(proximo)) proximo++;
-      patrimonio = `CHROME-${String(proximo).padStart(3, "0")}`;
+      // Gera o menor identificador livre para o tipo selecionado, consultando todas as unidades.
+      patrimonio = await obterProximoPatrimonio(tipo as TipoEquipamento);
     }
 
     const [patrimonioDuplicado] = await pool.execute<RowDataPacket[]>(
@@ -342,7 +371,7 @@ export async function POST(request: Request) {
       [patrimonio],
     );
     if (patrimonioDuplicado.length > 0) {
-      return erroJson("Já existe um equipamento com essa identificação nesta unidade. Escolha outro número.", 409);
+      return erroJson("Essa identificação já está em uso no sistema. Escolha outro valor.", 409);
     }
 
     const id = `EQ-${randomUUID()}`;
@@ -403,7 +432,7 @@ export async function POST(request: Request) {
 
     if (erroBanco.code === "ER_DUP_ENTRY") {
       return erroJson(
-        "Já existe um equipamento com esse patrimônio nesta unidade.",
+        "Essa identificação já está em uso no sistema.",
         409,
       );
     }
