@@ -163,12 +163,18 @@ function prepararDados(body: Record<string, unknown>) {
   const resultado = texto(body.resultado);
   const statusFinal = texto(body.statusFinal);
 
-  const custo =
+  const custoInformado =
     body.custo === undefined ||
     body.custo === null ||
     body.custo === ""
       ? 0
       : Number(body.custo);
+  const custo =
+    tipo === "manutencao" ||
+    tipo === "reposicao-de-peca" ||
+    tipo === "retorno-de-reparo"
+      ? custoInformado
+      : 0;
 
   return {
     equipamentoId,

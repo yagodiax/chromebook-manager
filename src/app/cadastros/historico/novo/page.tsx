@@ -80,6 +80,7 @@ export default function NovoHistoricoPage() {
     if (!equipamentoId) { setErro("Cadastre um equipamento antes de criar o histórico."); return; }
     if (tipo === "envio-para-reparo" && !destinoReparo.trim()) { setErro("Informe a assistência técnica ou empresa de reparo."); return; }
     if (tipo === "retorno-de-reparo" && custo.trim() === "") { setErro("Informe o custo final do reparo. Se não houve cobrança, informe 0."); return; }
+    if (custo.trim() !== "" && ["manutencao", "reposicao-de-peca", "retorno-de-reparo"].includes(tipo) && (!Number.isFinite(Number(custo)) || Number(custo) < 0)) { setErro("Informe um custo válido, igual ou maior que zero."); return; }
     if (arquivos.length > 5) { setErro("Você pode anexar no máximo 5 arquivos."); return; }
     if (arquivos.some((arquivo) => arquivo.size > 5 * 1024 * 1024)) { setErro("Cada arquivo deve ter no máximo 5 MB."); return; }
     setSalvando(true);
@@ -89,7 +90,7 @@ export default function NovoHistoricoPage() {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ equipamentoId, tipo, categoria, data, descricao, observacao, quemRealizou, destinoReparo, resultado, statusFinal: tipo === "retorno-de-reparo" ? statusFinal : "", custo: tipo === "retorno-de-reparo" ? Number(custo) : 0, anexos }),
+        body: JSON.stringify({ equipamentoId, tipo, categoria, data, descricao, observacao, quemRealizou, destinoReparo, resultado, statusFinal: tipo === "retorno-de-reparo" ? statusFinal : "", custo: ["manutencao", "reposicao-de-peca", "retorno-de-reparo"].includes(tipo) && custo.trim() !== "" ? Number(custo) : 0, anexos }),
       });
       const dados = await resposta.json().catch(() => ({}));
       if (!resposta.ok) throw new Error(dados.erro || "Não foi possível salvar o registro.");
@@ -120,10 +121,8 @@ export default function NovoHistoricoPage() {
               <div><label className={rotulo} htmlFor="categoria">Categoria</label><select id="categoria" className={campo} value={categoria} onChange={(e) => setCategoria(e.target.value)}>{CATEGORIAS.map((item) => <option key={item} value={item}>{item.replaceAll("-", " ").replace(/^./, (letra) => letra.toUpperCase())}</option>)}</select></div>
               <div><label className={rotulo} htmlFor="quemRealizou">Responsável / técnico</label><input id="quemRealizou" className={campo} value={quemRealizou} onChange={(e) => setQuemRealizou(e.target.value)} placeholder="Quem registrou ou realizou o serviço" /></div>
               {tipo === "envio-para-reparo" && <div className="sm:col-span-2"><label className={rotulo} htmlFor="destino">Assistência / empresa de reparo</label><input id="destino" required className={campo} value={destinoReparo} onChange={(e) => setDestinoReparo(e.target.value)} placeholder="Nome da empresa ou assistência" /></div>}
-              {tipo === "retorno-de-reparo" && <>
-                <div><label className={rotulo} htmlFor="custo">Custo final (R$)</label><input id="custo" required type="number" min="0" step="0.01" className={campo} value={custo} onChange={(e) => setCusto(e.target.value)} placeholder="0,00" /></div>
-                <div><label className={rotulo} htmlFor="statusFinal">Status após retorno</label><select id="statusFinal" className={campo} value={statusFinal} onChange={(e) => setStatusFinal(e.target.value)}>{STATUS.map((item) => <option key={item.valor} value={item.valor}>{item.nome}</option>)}</select></div>
-              </>}
+              {(tipo === "manutencao" || tipo === "reposicao-de-peca" || tipo === "retorno-de-reparo") && <div><label className={rotulo} htmlFor="custo">{tipo === "retorno-de-reparo" ? "Custo final da assistência (R$)" : "Custo interno (R$)"}</label><input id="custo" required={tipo === "retorno-de-reparo"} type="number" min="0" step="0.01" className={campo} value={custo} onChange={(e) => setCusto(e.target.value)} placeholder="0,00" /><p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{tipo === "retorno-de-reparo" ? "Informe o valor cobrado pela assistência. Se não houve cobrança, informe 0." : "Opcional. Registre aqui o gasto interno ou com a peça, apenas uma vez."}</p></div>}
+              {tipo === "retorno-de-reparo" && <div><label className={rotulo} htmlFor="statusFinal">Status após retorno</label><select id="statusFinal" className={campo} value={statusFinal} onChange={(e) => setStatusFinal(e.target.value)}>{STATUS.map((item) => <option key={item.valor} value={item.valor}>{item.nome}</option>)}</select></div>}
               <div className="sm:col-span-2"><label className={rotulo} htmlFor="descricao">Descrição</label><textarea id="descricao" required rows={4} className={campo} value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={tipo === "manutencao" ? "Descreva o serviço feito pela equipe interna..." : "Descreva o que aconteceu ou o serviço realizado..."} /></div>
               {tipo === "retorno-de-reparo" && <div className="sm:col-span-2"><label className={rotulo} htmlFor="resultado">Resultado do reparo</label><textarea id="resultado" rows={3} className={campo} value={resultado} onChange={(e) => setResultado(e.target.value)} placeholder="Peças trocadas, testes realizados e resultado..." /></div>}
               <div className="sm:col-span-2"><label className={rotulo} htmlFor="observacao">Observações adicionais</label><textarea id="observacao" rows={3} className={campo} value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Informações complementares..." /></div>
