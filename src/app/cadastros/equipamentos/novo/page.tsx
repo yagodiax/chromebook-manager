@@ -72,16 +72,20 @@ export default function CadastroPage() {
         const dados: unknown = await resposta.json();
         if (!Array.isArray(dados)) return;
 
-        const usados = new Set(
-          dados
-            .map((item: { patrimonio?: unknown }) => String(item.patrimonio ?? "").trim())
-            .filter((valor: string) => /^\\d+$/.test(valor)),
-        );
+        const usados = new Set<number>();
+        for (const item of dados as { patrimonio?: unknown }[]) {
+          const correspondencia = /^CHROME-(\\d+)$/i.exec(
+            String(item.patrimonio ?? "").trim(),
+          );
+          if (correspondencia) usados.add(Number(correspondencia[1]));
+        }
+
         let proximo = 1;
-        while (usados.has(String(proximo))) proximo++;
+        while (usados.has(proximo)) proximo++;
+        const sugestao = `CHROME-${String(proximo).padStart(3, "0")}`;
 
         if (!cancelado) {
-          setPatrimonio((atual) => atual.trim() ? atual : String(proximo));
+          setPatrimonio((atual) => atual.trim() ? atual : sugestao);
         }
       } catch {
         // A API também gera o patrimônio automaticamente ao salvar.
@@ -261,10 +265,10 @@ export default function CadastroPage() {
                   className={campo}
                   value={patrimonio}
                   onChange={(event) => setPatrimonio(event.target.value)}
-                  placeholder="Gerado automaticamente"
+                  placeholder="CHROME-001"
                 />
                 <p className="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                  Identificação gerada automaticamente com o menor número livre (1 a 100 primeiro). Você pode alterar este valor, desde que ele ainda não esteja em uso.
+                  Identificação gerada automaticamente no padrão CHROME-001, usando o menor número livre. Não há limite máximo; você pode alterar o valor, desde que ele seja único.
                 </p>
               </div>
 
