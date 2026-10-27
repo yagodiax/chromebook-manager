@@ -4,6 +4,7 @@ import Link from "next/link";
 
 const opcoes = [
   { titulo: "Cadastrar equipamento", descricao: "Adicione um Chromebook, notebook, projetor, catraca ou impressora.", href: "/cadastros/equipamentos/novo", simbolo: "＋" },
+  { titulo: "Gerenciar Access Points (APs)", descricao: "Consulte e mantenha o inventário de pontos de acesso Wi-Fi, MACs, localização e potência.", href: "/aps", simbolo: "⌁" },
   { titulo: "Cadastrar manutenção", descricao: "Registre um serviço realizado pela equipe interna da escola.", href: "/cadastros/historico/novo?tipo=manutencao", simbolo: "⚙" },
   { titulo: "Cadastrar envio ao reparo", descricao: "Registre o envio para uma assistência técnica externa.", href: "/cadastros/historico/novo?tipo=envio-para-reparo", simbolo: "↗" },
   { titulo: "Cadastrar retorno do reparo", descricao: "Informe o resultado, o custo final e o status após o retorno.", href: "/cadastros/historico/novo?tipo=retorno-de-reparo", simbolo: "↩" },
