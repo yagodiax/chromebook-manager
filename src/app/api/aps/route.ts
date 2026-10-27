@@ -20,15 +20,15 @@ async function contexto(request:Request) {
  return {unidade} as const;
 }
 type ValoresAP = {bloco:string;rack:string;marca:string;modelo:string;macAddress:string;potenciaDbm:number;status:string;observacoes:string|null};
-type ResultadoValidacao = {erro:string;valores?:never}|{erro?:never;valores:ValoresAP};
+type ResultadoValidacao = {ok:false;erro:string}|{ok:true;valores:ValoresAP};
 function validar(b:Record<string,unknown>):ResultadoValidacao {
  const bloco=String(b.bloco??"").trim(),rack=String(b.rack??"").trim(),marca=String(b.marca??"").trim(),modelo=String(b.modelo??"").trim();
  const macAddress=String(b.macAddress??"").trim().toUpperCase().replace(/-/g,":"),potenciaDbm=Number(b.potenciaDbm),status=String(b.status??"OK"),observacoes=String(b.observacoes??"").trim()||null;
- if(!bloco||!rack||!marca||!modelo||!macAddress)return {erro:"Preencha bloco, rack, marca, modelo e MAC Address."};
- if(!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(macAddress))return {erro:"MAC inválido. Use AA:BB:CC:DD:EE:FF."};
- if(!Number.isFinite(potenciaDbm)||potenciaDbm<0||potenciaDbm>100)return {erro:"Informe uma potência válida em dBm."};
- if(!["OK","Atenção","Em manutenção","Inativo"].includes(status))return {erro:"Status inválido."};
- return {valores:{bloco,rack,marca,modelo,macAddress,potenciaDbm,status,observacoes}};
+ if(!bloco||!rack||!marca||!modelo||!macAddress)return {ok:false,erro:"Preencha bloco, rack, marca, modelo e MAC Address."};
+ if(!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(macAddress))return {ok:false,erro:"MAC inválido. Use AA:BB:CC:DD:EE:FF."};
+ if(!Number.isFinite(potenciaDbm)||potenciaDbm<0||potenciaDbm>100)return {ok:false,erro:"Informe uma potência válida em dBm."};
+ if(!["OK","Atenção","Em manutenção","Inativo"].includes(status))return {ok:false,erro:"Status inválido."};
+ return {ok:true,valores:{bloco,rack,marca,modelo,macAddress,potenciaDbm,status,observacoes}};
 }
 export async function GET(request:Request) {
  try { const c=await contexto(request);if("erro"in c)return c.erro;
@@ -38,7 +38,7 @@ export async function GET(request:Request) {
 }
 export async function POST(request:Request) {
  try {const c=await contexto(request);if("erro"in c)return c.erro;const b:unknown=await request.json();if(!b||typeof b!=="object"||Array.isArray(b))return erro("Dados inválidos.",400);
- const v=validar(b as Record<string,unknown>);if(!("valores" in v))return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
+ const v=validar(b as Record<string,unknown>);if(!v.ok)return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
  await pool.execute<ResultSetHeader>("INSERT INTO access_points (id,unidade_id,bloco,rack,marca,modelo,mac_address,potencia_dbm,status,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?)",[id,c.unidade,a.bloco,a.rack,a.marca,a.modelo,a.macAddress,a.potenciaDbm,a.status,a.observacoes]);
  return NextResponse.json({id,unidadeId:c.unidade,...a},{status:201,headers:{"Cache-Control":"no-store"}});
  }catch(e){if((e as {code?:string}).code==="ER_DUP_ENTRY")return erro("Já existe um AP com esse MAC nesta unidade.",409);console.error("Erro ao cadastrar AP:",e);return erro("Não foi possível cadastrar o AP.",500);}
