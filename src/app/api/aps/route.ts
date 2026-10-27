@@ -36,7 +36,7 @@ export async function GET(request:Request) {
 }
 export async function POST(request:Request) {
  try {const c=await contexto(request);if("erro"in c)return c.erro;const b:unknown=await request.json();if(!b||typeof b!=="object"||Array.isArray(b))return erro("Dados inválidos.",400);
- const v=validar(b as Record<string,unknown>);if("erro"in v)return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
+ const v=validar(b as Record<string,unknown>);if(v.erro)return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
  await pool.execute<ResultSetHeader>("INSERT INTO access_points (id,unidade_id,bloco,rack,marca,modelo,mac_address,potencia_dbm,status,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?)",[id,c.unidade,a.bloco,a.rack,a.marca,a.modelo,a.macAddress,a.potenciaDbm,a.status,a.observacoes]);
  return NextResponse.json({id,unidadeId:c.unidade,...a},{status:201,headers:{"Cache-Control":"no-store"}});
  }catch(e){if((e as {code?:string}).code==="ER_DUP_ENTRY")return erro("Já existe um AP com esse MAC nesta unidade.",409);console.error("Erro ao cadastrar AP:",e);return erro("Não foi possível cadastrar o AP.",500);}
