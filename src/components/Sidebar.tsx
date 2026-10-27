@@ -127,6 +127,17 @@ export default function Sidebar({
       ],
     },
     {
+      titulo: "Rede",
+      links: [
+        {
+          href: "/aps",
+          label: "Access Points (APs)",
+          icon: "⌁",
+          active: pathname.startsWith("/aps"),
+        },
+      ],
+    },
+    {
       titulo: "Assistência técnica",
       links: [
         {
