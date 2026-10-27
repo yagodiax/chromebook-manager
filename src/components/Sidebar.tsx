@@ -124,11 +124,6 @@ export default function Sidebar({
           icon: "▤",
           active: pathname.startsWith("/impressoras"),
         },
-      ],
-    },
-    {
-      titulo: "Rede",
-      links: [
         {
           href: "/aps",
           label: "Access Points (APs)",
