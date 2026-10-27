@@ -19,7 +19,9 @@ async function contexto(request:Request) {
  if(!podeAcessarUnidade(usuario,unidade))return {erro:erro("Sem permissão para acessar esta unidade.",403)} as const;
  return {unidade} as const;
 }
-function validar(b:Record<string,unknown>) {
+type ValoresAP = {bloco:string;rack:string;marca:string;modelo:string;macAddress:string;potenciaDbm:number;status:string;observacoes:string|null};
+type ResultadoValidacao = {erro:string;valores?:never}|{erro?:never;valores:ValoresAP};
+function validar(b:Record<string,unknown>):ResultadoValidacao {
  const bloco=String(b.bloco??"").trim(),rack=String(b.rack??"").trim(),marca=String(b.marca??"").trim(),modelo=String(b.modelo??"").trim();
  const macAddress=String(b.macAddress??"").trim().toUpperCase().replace(/-/g,":"),potenciaDbm=Number(b.potenciaDbm),status=String(b.status??"OK"),observacoes=String(b.observacoes??"").trim()||null;
  if(!bloco||!rack||!marca||!modelo||!macAddress)return {erro:"Preencha bloco, rack, marca, modelo e MAC Address."};
@@ -36,14 +38,14 @@ export async function GET(request:Request) {
 }
 export async function POST(request:Request) {
  try {const c=await contexto(request);if("erro"in c)return c.erro;const b:unknown=await request.json();if(!b||typeof b!=="object"||Array.isArray(b))return erro("Dados inválidos.",400);
- const v=validar(b as Record<string,unknown>);if(v.erro)return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
+ const v=validar(b as Record<string,unknown>);if(!("valores" in v))return erro(v.erro,400);const id="AP-"+randomUUID(),a=v.valores;
  await pool.execute<ResultSetHeader>("INSERT INTO access_points (id,unidade_id,bloco,rack,marca,modelo,mac_address,potencia_dbm,status,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?)",[id,c.unidade,a.bloco,a.rack,a.marca,a.modelo,a.macAddress,a.potenciaDbm,a.status,a.observacoes]);
  return NextResponse.json({id,unidadeId:c.unidade,...a},{status:201,headers:{"Cache-Control":"no-store"}});
  }catch(e){if((e as {code?:string}).code==="ER_DUP_ENTRY")return erro("Já existe um AP com esse MAC nesta unidade.",409);console.error("Erro ao cadastrar AP:",e);return erro("Não foi possível cadastrar o AP.",500);}
 }
 export async function PATCH(request:Request) {
  try {const c=await contexto(request);if("erro"in c)return c.erro;const b:unknown=await request.json();if(!b||typeof b!=="object"||Array.isArray(b))return erro("Dados inválidos.",400);const entrada=b as Record<string,unknown>,id=String(entrada.id??"").trim();if(!id)return erro("ID do AP não informado.",400);
- const v=validar(entrada);if("erro"in v)return erro(v.erro,400);const a=v.valores;
+ const v=validar(entrada);if(!("valores" in v))return erro(v.erro,400);const a=v.valores;
  const [r]=await pool.execute<ResultSetHeader>("UPDATE access_points SET bloco=?,rack=?,marca=?,modelo=?,mac_address=?,potencia_dbm=?,status=?,observacoes=? WHERE id=? AND unidade_id=?",[a.bloco,a.rack,a.marca,a.modelo,a.macAddress,a.potenciaDbm,a.status,a.observacoes,id,c.unidade]);
  if(!r.affectedRows)return erro("AP não encontrado nesta unidade.",404);return NextResponse.json({id,unidadeId:c.unidade,...a},{headers:{"Cache-Control":"no-store"}});
  }catch(e){if((e as {code?:string}).code==="ER_DUP_ENTRY")return erro("Já existe um AP com esse MAC nesta unidade.",409);console.error("Erro ao editar AP:",e);return erro("Não foi possível atualizar o AP.",500);}
