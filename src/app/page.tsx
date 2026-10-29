@@ -491,93 +491,6 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="rounded-2xl border border-gray-300 bg-white p-5 shadow-sm sm:p-6 dark:border-gray-600 dark:bg-[#383838]">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
-                  Registros · {unidadeAtiva}
-                </p>
-
-                <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  Atividade recente
-                </h2>
-              </div>
-
-              <Link
-                href="/historico"
-                className="rounded-md px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-              >
-                Ver histórico →
-              </Link>
-            </div>
-
-            {carregando ? (
-              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                Carregando atividades da unidade...
-              </p>
-            ) : historico.length === 0 ? (
-              <div className="py-12 text-center">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-gray-300 bg-gray-100 text-lg text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                  —
-                </div>
-
-                <p className="mt-3 font-semibold text-gray-800 dark:text-gray-100">
-                  Nenhuma atividade registrada
-                </p>
-
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Manutenções e reparos aparecerão aqui.
-                </p>
-
-                <Link
-                  href="/cadastros"
-                  className="mt-4 inline-flex rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-                >
-                  Criar primeiro registro
-                </Link>
-              </div>
-            ) : (
-              <div className="mt-3 divide-y divide-gray-200 dark:divide-gray-600">
-                {historico.slice(0, 5).map((item) => (
-                  <div key={item.id} className="py-4 first:pt-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
-                        {TIPOS_HISTORICO[item.tipo] || item.tipo}
-                      </span>
-
-                      <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
-                        {formatarData(item.data)}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 font-semibold text-gray-900 dark:text-gray-100">
-                      {item.equipamento.patrimonio ||
-                        item.equipamento.tipo}{" "}
-                      ·{" "}
-                      {[
-                        item.equipamento.fabricante,
-                        item.equipamento.modelo,
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
-                    </p>
-
-                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-gray-600 dark:text-gray-300">
-                      {item.descricao}
-                    </p>
-
-                    {item.tipo === "retorno-de-reparo" && (
-                      <p className="mt-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                        {moeda(Number(item.custo) || 0)}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-        </section>
-
         <section className="mt-6">
           <div className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
@@ -704,6 +617,94 @@ export default function Home() {
           </div>
         </section>
 
+
+        <section className="mt-5 grid grid-cols-1 gap-5">
+          <article className="rounded-2xl border border-gray-300 bg-white p-5 shadow-sm sm:p-6 dark:border-gray-600 dark:bg-[#383838]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
+                  Registros · {unidadeAtiva}
+                </p>
+
+                <h2 className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  Atividade recente
+                </h2>
+              </div>
+
+              <Link
+                href="/historico"
+                className="rounded-md px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+              >
+                Ver histórico →
+              </Link>
+            </div>
+
+            {carregando ? (
+              <p className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                Carregando atividades da unidade...
+              </p>
+            ) : historico.length === 0 ? (
+              <div className="py-12 text-center">
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg border border-gray-300 bg-gray-100 text-lg text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                  —
+                </div>
+
+                <p className="mt-3 font-semibold text-gray-800 dark:text-gray-100">
+                  Nenhuma atividade registrada
+                </p>
+
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Manutenções e reparos aparecerão aqui.
+                </p>
+
+                <Link
+                  href="/cadastros"
+                  className="mt-4 inline-flex rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                >
+                  Criar primeiro registro
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-3 divide-y divide-gray-200 dark:divide-gray-600">
+                {historico.slice(0, 5).map((item) => (
+                  <div key={item.id} className="py-4 first:pt-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200">
+                        {TIPOS_HISTORICO[item.tipo] || item.tipo}
+                      </span>
+
+                      <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                        {formatarData(item.data)}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 font-semibold text-gray-900 dark:text-gray-100">
+                      {item.equipamento.patrimonio ||
+                        item.equipamento.tipo}{" "}
+                      ·{" "}
+                      {[
+                        item.equipamento.fabricante,
+                        item.equipamento.modelo,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </p>
+
+                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-gray-600 dark:text-gray-300">
+                      {item.descricao}
+                    </p>
+
+                    {item.tipo === "retorno-de-reparo" && (
+                      <p className="mt-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                        {moeda(Number(item.custo) || 0)}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+        </section>
 
       </div>
     </main>
