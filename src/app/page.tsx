@@ -490,6 +490,7 @@ export default function Home() {
               </span>
             </div>
           </article>
+        </section>
 
         <section className="mt-6">
           <div className="mb-4">
