@@ -505,8 +505,8 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-            <article className="min-w-0 rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+            <article className="flex h-full min-w-0 flex-col rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
@@ -533,7 +533,7 @@ export default function Home() {
                   Ainda não há manutenções internas registradas.
                 </p>
               ) : (
-                <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">
+                <div className="mt-4 flex-1 divide-y divide-gray-200 dark:divide-gray-600">
                   {maisManutencoes.map((item, index) => (
                     <div key={item.id} className="flex items-center gap-3 py-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
@@ -554,14 +554,14 @@ export default function Home() {
                   ))}
                 </div>
               )}
-              <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600">
+              <div className="mt-auto border-t border-gray-200 pt-3 dark:border-gray-600">
                 <Link href="/historico" className="text-sm font-semibold text-gray-700 hover:underline dark:text-gray-200">
                   Consultar histórico →
                 </Link>
               </div>
             </article>
 
-            <article className="min-w-0 rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
+            <article className="flex h-full min-w-0 flex-col rounded-2xl border border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600 dark:bg-[#383838]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">
@@ -588,7 +588,7 @@ export default function Home() {
                   Ainda não há custos positivos de reparo registrados.
                 </p>
               ) : (
-                <div className="mt-4 divide-y divide-gray-200 dark:divide-gray-600">
+                <div className="mt-4 flex-1 divide-y divide-gray-200 dark:divide-gray-600">
                   {maioresGastos.map((item, index) => (
                     <div key={item.id} className="flex items-center gap-3 py-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-700 dark:bg-gray-700 dark:text-gray-100">
@@ -609,7 +609,7 @@ export default function Home() {
                   ))}
                 </div>
               )}
-              <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600">
+              <div className="mt-auto border-t border-gray-200 pt-3 dark:border-gray-600">
                 <Link href="/relatorios/gastos" className="text-sm font-semibold text-gray-700 hover:underline dark:text-gray-200">
                   Ver relatório de gastos →
                 </Link>
